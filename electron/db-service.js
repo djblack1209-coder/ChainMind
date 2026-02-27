@@ -13,6 +13,10 @@ function pick(data, allowedKeys) {
   return result;
 }
 
+function runInTransaction(db, work) {
+  return db.transaction(work)();
+}
+
 // ============ userService ============
 const userService = {
   list(page, pageSize, keyword) {
@@ -37,13 +41,15 @@ const userService = {
     const safe = pick(data, ['username', 'password', 'nick_name', 'phone', 'email', 'enable', 'authority_id']);
     const hash = bcrypt.hashSync(safe.password || '123456', 10);
     const uuid = crypto.randomUUID();
-    const info = db.prepare('INSERT INTO sys_users (uuid,username,password,nick_name,phone,email,enable,authority_id) VALUES (?,?,?,?,?,?,?,?)').run(
-      uuid, safe.username, hash, safe.nick_name || '', safe.phone || '', safe.email || '', safe.enable !== undefined ? safe.enable : 1, safe.authority_id || 2
-    );
-    if (safe.authority_id) {
-      db.prepare('INSERT OR IGNORE INTO sys_user_authority (sys_user_id,sys_authority_authority_id) VALUES (?,?)').run(info.lastInsertRowid, safe.authority_id);
-    }
-    return { id: info.lastInsertRowid, uuid };
+    return runInTransaction(db, () => {
+      const info = db.prepare('INSERT INTO sys_users (uuid,username,password,nick_name,phone,email,enable,authority_id) VALUES (?,?,?,?,?,?,?,?)').run(
+        uuid, safe.username, hash, safe.nick_name || '', safe.phone || '', safe.email || '', safe.enable !== undefined ? safe.enable : 1, safe.authority_id || 2
+      );
+      if (safe.authority_id) {
+        db.prepare('INSERT OR IGNORE INTO sys_user_authority (sys_user_id,sys_authority_authority_id) VALUES (?,?)').run(info.lastInsertRowid, safe.authority_id);
+      }
+      return { id: info.lastInsertRowid, uuid };
+    });
   },
   update(id, data) {
     const db = getDb();
@@ -54,12 +60,14 @@ const userService = {
     if (!fields.length) return false;
     fields.push("updated_at = datetime('now')");
     params.push(id);
-    db.prepare('UPDATE sys_users SET ' + fields.join(', ') + ' WHERE id = ?').run(...params);
-    if (data.authority_id) {
-      db.prepare('DELETE FROM sys_user_authority WHERE sys_user_id = ?').run(id);
-      db.prepare('INSERT INTO sys_user_authority (sys_user_id,sys_authority_authority_id) VALUES (?,?)').run(id, data.authority_id);
-    }
-    return true;
+    return runInTransaction(db, () => {
+      db.prepare('UPDATE sys_users SET ' + fields.join(', ') + ' WHERE id = ?').run(...params);
+      if (data.authority_id) {
+        db.prepare('DELETE FROM sys_user_authority WHERE sys_user_id = ?').run(id);
+        db.prepare('INSERT INTO sys_user_authority (sys_user_id,sys_authority_authority_id) VALUES (?,?)').run(id, data.authority_id);
+      }
+      return true;
+    });
   },
   del(id) {
     getDb().prepare("UPDATE sys_users SET deleted_at=datetime('now') WHERE id=?").run(id);
@@ -110,10 +118,12 @@ const authorityService = {
   },
   del(authorityId) {
     const db = getDb();
-    db.prepare("UPDATE sys_authorities SET deleted_at=datetime('now') WHERE authority_id=?").run(authorityId);
-    db.prepare('DELETE FROM sys_authority_menus WHERE sys_authority_authority_id=?').run(authorityId);
-    db.prepare('DELETE FROM casbin_rule WHERE v0=?').run(String(authorityId));
-    return true;
+    return runInTransaction(db, () => {
+      db.prepare("UPDATE sys_authorities SET deleted_at=datetime('now') WHERE authority_id=?").run(authorityId);
+      db.prepare('DELETE FROM sys_authority_menus WHERE sys_authority_authority_id=?').run(authorityId);
+      db.prepare('DELETE FROM casbin_rule WHERE v0=?').run(String(authorityId));
+      return true;
+    });
   },
   getMenuIds(authorityId) {
     return getDb().prepare('SELECT sys_base_menu_id FROM sys_authority_menus WHERE sys_authority_authority_id=?').all(authorityId).map(r => r.sys_base_menu_id);
@@ -181,9 +191,11 @@ const menuService = {
   },
   del(id) {
     const db = getDb();
-    db.prepare("UPDATE sys_base_menus SET deleted_at=datetime('now') WHERE id=?").run(id);
-    db.prepare('DELETE FROM sys_authority_menus WHERE sys_base_menu_id=?').run(id);
-    return true;
+    return runInTransaction(db, () => {
+      db.prepare("UPDATE sys_base_menus SET deleted_at=datetime('now') WHERE id=?").run(id);
+      db.prepare('DELETE FROM sys_authority_menus WHERE sys_base_menu_id=?').run(id);
+      return true;
+    });
   },
   getByAuthority(authorityId) {
     const db = getDb();
@@ -289,9 +301,11 @@ const dictionaryService = {
   },
   del(id) {
     const db = getDb();
-    db.prepare("UPDATE sys_dictionaries SET deleted_at=datetime('now') WHERE id=?").run(id);
-    db.prepare("UPDATE sys_dictionary_details SET deleted_at=datetime('now') WHERE sys_dictionary_id=?").run(id);
-    return true;
+    return runInTransaction(db, () => {
+      db.prepare("UPDATE sys_dictionaries SET deleted_at=datetime('now') WHERE id=?").run(id);
+      db.prepare("UPDATE sys_dictionary_details SET deleted_at=datetime('now') WHERE sys_dictionary_id=?").run(id);
+      return true;
+    });
   },
   getDetails(dictId) {
     return getDb().prepare('SELECT * FROM sys_dictionary_details WHERE sys_dictionary_id=? AND deleted_at IS NULL ORDER BY sort ASC, id ASC').all(dictId);
@@ -376,19 +390,21 @@ const configService = {
   },
   set(key, value, groupName, description) {
     const db = getDb();
-    db.prepare(`
-      INSERT INTO sys_configs (key, value, group_name, description, deleted_at)
-      VALUES (?, ?, ?, ?, NULL)
-      ON CONFLICT(key) DO UPDATE SET
-        value = excluded.value,
-        group_name = excluded.group_name,
-        description = excluded.description,
-        deleted_at = NULL,
-        updated_at = datetime('now')
-    `).run(key, value, groupName || 'system', description || '');
+    return runInTransaction(db, () => {
+      db.prepare(`
+        INSERT INTO sys_configs (key, value, group_name, description, deleted_at)
+        VALUES (?, ?, ?, ?, NULL)
+        ON CONFLICT(key) DO UPDATE SET
+          value = excluded.value,
+          group_name = excluded.group_name,
+          description = excluded.description,
+          deleted_at = NULL,
+          updated_at = datetime('now')
+      `).run(key, value, groupName || 'system', description || '');
 
-    const row = db.prepare('SELECT id FROM sys_configs WHERE key=?').get(key);
-    return { id: row?.id };
+      const row = db.prepare('SELECT id FROM sys_configs WHERE key=?').get(key);
+      return { id: row?.id };
+    });
   },
   del(id) {
     getDb().prepare("UPDATE sys_configs SET deleted_at=datetime('now') WHERE id=?").run(id);
@@ -578,19 +594,21 @@ const pluginRegistryService = {
   register(data) {
     const db = getDb();
     const safe = pick(data, ['name', 'display_name', 'description', 'version', 'author', 'enabled', 'config', 'path']);
-    const existing = db.prepare('SELECT id FROM sys_plugins WHERE name=?').get(safe.name);
-    if (existing) {
-      db.prepare("UPDATE sys_plugins SET display_name=?,description=?,version=?,author=?,enabled=?,config=?,path=?,updated_at=datetime('now') WHERE name=?").run(
-        safe.display_name || '', safe.description || '', safe.version || '1.0.0', safe.author || '',
-        safe.enabled !== undefined ? safe.enabled : 1, JSON.stringify(safe.config || {}), safe.path || '', safe.name
+    return runInTransaction(db, () => {
+      const existing = db.prepare('SELECT id FROM sys_plugins WHERE name=?').get(safe.name);
+      if (existing) {
+        db.prepare("UPDATE sys_plugins SET display_name=?,description=?,version=?,author=?,enabled=?,config=?,path=?,updated_at=datetime('now') WHERE name=?").run(
+          safe.display_name || '', safe.description || '', safe.version || '1.0.0', safe.author || '',
+          safe.enabled !== undefined ? safe.enabled : 1, JSON.stringify(safe.config || {}), safe.path || '', safe.name
+        );
+        return { id: existing.id };
+      }
+      const info = db.prepare('INSERT INTO sys_plugins (name,display_name,description,version,author,enabled,config,path) VALUES (?,?,?,?,?,?,?,?)').run(
+        safe.name, safe.display_name || '', safe.description || '', safe.version || '1.0.0', safe.author || '',
+        safe.enabled !== undefined ? safe.enabled : 1, JSON.stringify(safe.config || {}), safe.path || ''
       );
-      return { id: existing.id };
-    }
-    const info = db.prepare('INSERT INTO sys_plugins (name,display_name,description,version,author,enabled,config,path) VALUES (?,?,?,?,?,?,?,?)').run(
-      safe.name, safe.display_name || '', safe.description || '', safe.version || '1.0.0', safe.author || '',
-      safe.enabled !== undefined ? safe.enabled : 1, JSON.stringify(safe.config || {}), safe.path || ''
-    );
-    return { id: info.lastInsertRowid };
+      return { id: info.lastInsertRowid };
+    });
   },
   toggle(name, enabled) {
     getDb().prepare("UPDATE sys_plugins SET enabled=?,updated_at=datetime('now') WHERE name=?").run(enabled ? 1 : 0, name);

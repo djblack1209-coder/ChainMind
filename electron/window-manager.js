@@ -3,6 +3,24 @@ const path = require('path');
 
 function createWindowManager({ isDev, appUrl, isQuitting }) {
   let mainWindow = null;
+  const rendererCrashTimestamps = [];
+  let crashLoopDialogShown = false;
+  const RENDERER_CRASH_WINDOW_MS = 60 * 1000;
+  const MAX_AUTO_RELOADS = 3;
+
+  function recordRendererCrash() {
+    const now = Date.now();
+    while (rendererCrashTimestamps.length > 0 && now - rendererCrashTimestamps[0] > RENDERER_CRASH_WINDOW_MS) {
+      rendererCrashTimestamps.shift();
+    }
+    rendererCrashTimestamps.push(now);
+    return rendererCrashTimestamps.length;
+  }
+
+  function resetCrashWindow() {
+    rendererCrashTimestamps.length = 0;
+    crashLoopDialogShown = false;
+  }
 
   function createMainWindow() {
     mainWindow = new BrowserWindow({
@@ -33,6 +51,32 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
     mainWindow.webContents.on('render-process-gone', (_event, details) => {
       console.error('[CRASH] Renderer process gone:', details.reason);
       if (details.reason !== 'clean-exit') {
+        const crashCount = recordRendererCrash();
+
+        if (crashCount > MAX_AUTO_RELOADS) {
+          if (!crashLoopDialogShown && mainWindow && !mainWindow.isDestroyed()) {
+            crashLoopDialogShown = true;
+            dialog.showMessageBox(mainWindow, {
+              type: 'error',
+              title: '页面连续崩溃',
+              message: 'ChainMind 页面连续崩溃，已暂停自动重载。',
+              detail: '你可以手动重试加载，或先关闭应用检查最近改动。',
+              buttons: ['手动重试', '关闭应用'],
+              defaultId: 0,
+              cancelId: 1,
+            }).then(({ response }) => {
+              if (!mainWindow || mainWindow.isDestroyed()) return;
+              if (response === 0) {
+                resetCrashWindow();
+                mainWindow.loadURL(`${appUrl}/login`);
+              } else {
+                mainWindow.close();
+              }
+            }).catch(() => {});
+          }
+          return;
+        }
+
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.loadURL(`${appUrl}/login`);
@@ -64,6 +108,7 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
     });
 
     mainWindow.on('closed', () => {
+      resetCrashWindow();
       mainWindow = null;
     });
 

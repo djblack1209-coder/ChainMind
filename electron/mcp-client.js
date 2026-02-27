@@ -5,11 +5,13 @@ const { ipcMain } = require('electron');
 const { spawn } = require('child_process');
 const readline = require('readline');
 
+const MAX_MCP_MESSAGE_BYTES = 1024 * 1024;
+
 class MCPClient {
   constructor() {
     this.process = null;
     this.requestId = 0;
-    this.pending = new Map(); // id -> { resolve, reject }
+    this.pending = new Map(); // id -> { resolve, reject, timeoutId }
     this.tools = [];
     this.connected = false;
     this._lastConfig = null;
@@ -25,6 +27,10 @@ class MCPClient {
 
   async connect(config) {
     // config: { command, args, env } or { url }
+    if (!config || typeof config !== 'object') {
+      throw new Error('Invalid MCP config');
+    }
+
     if (this.connected) await this.disconnect();
     this._intentionalDisconnect = false;
     this._lastConfig = config;
@@ -57,8 +63,9 @@ class MCPClient {
         console.log('[MCP] process exited with code', code);
         this.connected = false;
         this.tools = [];
-        for (const [_id, { reject }] of this.pending) {
-          reject(new Error('MCP process exited'));
+        for (const [_id, pendingRequest] of this.pending) {
+          clearTimeout(pendingRequest.timeoutId);
+          pendingRequest.reject(new Error('MCP process exited'));
         }
         this.pending.clear();
         this._scheduleReconnect();
@@ -121,6 +128,10 @@ class MCPClient {
     }
     this.connected = false;
     this.tools = [];
+    for (const [_id, pendingRequest] of this.pending) {
+      clearTimeout(pendingRequest.timeoutId);
+      pendingRequest.reject(new Error('MCP disconnected'));
+    }
     this.pending.clear();
   }
 
@@ -137,21 +148,23 @@ class MCPClient {
       }
       const id = ++this.requestId;
       const msg = JSON.stringify({ jsonrpc: '2.0', id, method, params });
-      this.pending.set(id, { resolve, reject });
+
+      const timeoutId = setTimeout(() => {
+        const pendingRequest = this.pending.get(id);
+        if (!pendingRequest) return;
+        this.pending.delete(id);
+        pendingRequest.reject(new Error(`MCP request timeout: ${method}`));
+      }, 30000);
+
+      this.pending.set(id, { resolve, reject, timeoutId });
+
       try {
         this.process.stdin.write(msg + '\n');
       } catch (err) {
+        clearTimeout(timeoutId);
         this.pending.delete(id);
         return reject(new Error(`MCP write failed: ${err.message}`));
       }
-
-      // Timeout after 30s
-      setTimeout(() => {
-        if (this.pending.has(id)) {
-          this.pending.delete(id);
-          reject(new Error(`MCP request timeout: ${method}`));
-        }
-      }, 30000);
     });
   }
 
@@ -167,15 +180,38 @@ class MCPClient {
   }
 
   _handleMessage(line) {
+    if (typeof line !== 'string' || !line.trim()) return;
+    if (Buffer.byteLength(line, 'utf8') > MAX_MCP_MESSAGE_BYTES) {
+      console.error('[MCP] message too large, skipped');
+      return;
+    }
+
     try {
       const msg = JSON.parse(line);
-      if (msg.id && this.pending.has(msg.id)) {
-        const { resolve, reject } = this.pending.get(msg.id);
-        this.pending.delete(msg.id);
-        if (msg.error) reject(new Error(msg.error.message));
-        else resolve(msg.result);
+      if (!msg || typeof msg !== 'object') return;
+
+      const responseId = msg.id;
+      if ((typeof responseId === 'number' || typeof responseId === 'string') && this.pending.has(responseId)) {
+        const pendingRequest = this.pending.get(responseId);
+        if (!pendingRequest) return;
+
+        this.pending.delete(responseId);
+        clearTimeout(pendingRequest.timeoutId);
+
+        if (msg.error) {
+          const errorMessage = (msg.error && typeof msg.error.message === 'string')
+            ? msg.error.message
+            : 'MCP request failed';
+          pendingRequest.reject(new Error(errorMessage));
+          return;
+        }
+
+        pendingRequest.resolve(msg.result);
       }
-    } catch { /* skip non-JSON lines */ }
+    } catch (err) {
+      if (err instanceof SyntaxError) return;
+      console.error('[MCP] message handling error:', err.message);
+    }
   }
 
   _registerIPC() {

@@ -64,9 +64,10 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       }
       set({ loading: false });
       return { ok: false, error: result.error || '登录失败' };
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({ loading: false });
-      return { ok: false, error: err.message || '登录异常' };
+      const errorMessage = err instanceof Error ? err.message : '登录异常';
+      return { ok: false, error: errorMessage || '登录异常' };
     }
   },
 
@@ -117,8 +118,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         newPassword: newPwd,
       });
       return result.ok ? { ok: true } : { ok: false, error: result.error || '修改失败' };
-    } catch (err: any) {
-      return { ok: false, error: err.message };
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '修改失败';
+      return { ok: false, error: errorMessage };
     }
   },
 

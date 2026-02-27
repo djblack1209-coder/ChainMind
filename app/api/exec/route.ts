@@ -263,6 +263,39 @@ function normalizeTimeout(rawTimeout: unknown): number {
   return Math.min(Math.max(bounded, MIN_TIMEOUT_MS), MAX_TIMEOUT_MS);
 }
 
+function normalizeExecFailure(error: unknown): { stdout: string; stderr: string; exitCode: number } {
+  const fallbackMessage = error instanceof Error ? error.message : String(error || '命令执行失败');
+
+  if (!error || typeof error !== 'object') {
+    return {
+      stdout: '',
+      stderr: fallbackMessage,
+      exitCode: 1,
+    };
+  }
+
+  const maybeError = error as {
+    stdout?: unknown;
+    stderr?: unknown;
+    message?: unknown;
+    code?: unknown;
+  };
+
+  const stdout = typeof maybeError.stdout === 'string' ? maybeError.stdout : '';
+  const stderr = typeof maybeError.stderr === 'string'
+    ? maybeError.stderr
+    : (typeof maybeError.message === 'string' ? maybeError.message : fallbackMessage);
+
+  const rawCode = typeof maybeError.code === 'number' ? maybeError.code : Number(maybeError.code);
+  const exitCode = Number.isFinite(rawCode) ? Math.trunc(rawCode) : 1;
+
+  return {
+    stdout,
+    stderr,
+    exitCode,
+  };
+}
+
 async function parseBody(req: NextRequest): Promise<{ ok: true; data: Record<string, unknown> } | { ok: false; status: number; error: string }> {
   const raw = await req.text();
   if (Buffer.byteLength(raw, 'utf8') > MAX_BODY_BYTES) {
@@ -400,12 +433,13 @@ export async function POST(req: NextRequest) {
         stderr: stderr.slice(0, 10000),
         exitCode: 0,
       });
-    } catch (execErr: any) {
+    } catch (execErr: unknown) {
+      const failure = normalizeExecFailure(execErr);
       return NextResponse.json({
         ok: false,
-        stdout: (execErr.stdout || '').slice(0, 50000),
-        stderr: (execErr.stderr || execErr.message || '').slice(0, 10000),
-        exitCode: execErr.code ?? 1,
+        stdout: failure.stdout.slice(0, 50000),
+        stderr: failure.stderr.slice(0, 10000),
+        exitCode: failure.exitCode,
       });
     }
   } catch {

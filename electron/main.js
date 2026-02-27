@@ -32,12 +32,72 @@ if (!process.env.CHAINMIND_EXEC_TOKEN) {
 
 let isQuitting = false;
 
+function toErrorPayload(value) {
+  if (value instanceof Error) {
+    return {
+      message: value.message || 'Unknown error',
+      stack: value.stack || '',
+    };
+  }
+
+  if (typeof value === 'string') {
+    return {
+      message: value,
+      stack: '',
+    };
+  }
+
+  try {
+    return {
+      message: JSON.stringify(value),
+      stack: '',
+    };
+  } catch {
+    return {
+      message: String(value),
+      stack: '',
+    };
+  }
+}
+
+function reportProcessError(level, errorLike) {
+  const { message, stack } = toErrorPayload(errorLike);
+  const tag = level === 'fatal' ? 'FATAL' : 'WARN';
+
+  console.error(`[${tag}] ${message}`);
+  if (stack) {
+    console.error(stack);
+  }
+
+  if (operationLogger?.logDir) {
+    operationLogger.log({
+      type: 'process_error',
+      level,
+      module: 'main-process',
+      message,
+      stack,
+    }).catch(() => {});
+  }
+
+  try {
+    dbService.errorLogService.create({
+      level: level === 'fatal' ? 'fatal' : 'error',
+      module: 'main-process',
+      message,
+      stack,
+      user_id: 0,
+    });
+  } catch {
+    // DB may not be available yet during startup failures.
+  }
+}
+
 process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught exception:', err);
+  reportProcessError('fatal', err);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[WARN] Unhandled rejection:', reason);
+  reportProcessError('warn', reason);
 });
 
 const serverManager = createServerManager({

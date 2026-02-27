@@ -75,6 +75,14 @@ afterAll(() => {
   try { fs.rmSync(testDataPath, { recursive: true, force: true }); } catch {}
 });
 
+describe('database runtime settings', () => {
+  it('enables busy_timeout to mitigate SQLITE_BUSY under concurrent writes', () => {
+    const db = database.getDb();
+    const busyTimeout = db.pragma('busy_timeout', { simple: true });
+    expect(busyTimeout).toBe(5000);
+  });
+});
+
 // ============ userService ============
 describe('userService', () => {
   let userId;

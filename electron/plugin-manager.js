@@ -26,24 +26,63 @@ class PluginManager {
   }
 
   // Send a message to a plugin worker and wait for response
-  _sendToWorker(worker, msg) {
+  _sendToWorker(worker, msg, options = {}) {
+    const { terminateOnTimeout = true } = options;
+
     return new Promise((resolve, reject) => {
       const id = Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       msg.id = id;
+
+      let settled = false;
+
+      const cleanup = () => {
+        worker.off('message', handler);
+        worker.off('error', onError);
+      };
+
+      const finishResolve = (result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        cleanup();
+        resolve(result);
+      };
+
+      const finishReject = (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        cleanup();
+        reject(error instanceof Error ? error : new Error(String(error || 'Plugin operation failed')));
+      };
+
       const timer = setTimeout(() => {
-        reject(new Error('Plugin operation timed out'));
+        if (terminateOnTimeout) {
+          worker.terminate().catch(() => {});
+        }
+        finishReject(new Error('Plugin operation timed out'));
       }, PLUGIN_TIMEOUT);
 
       const handler = (response) => {
+        if (!response || typeof response !== 'object') return;
         if (response.id === id || (response.type === msg.type && !response.id)) {
-          clearTimeout(timer);
-          worker.off('message', handler);
-          if (response.ok) resolve(response.result);
-          else reject(new Error(response.error || 'Plugin operation failed'));
+          if (response.ok) finishResolve(response.result);
+          else finishReject(new Error(response.error || 'Plugin operation failed'));
         }
       };
+
+      const onError = (err) => {
+        finishReject(err);
+      };
+
       worker.on('message', handler);
-      worker.postMessage(msg);
+      worker.on('error', onError);
+
+      try {
+        worker.postMessage(msg);
+      } catch (err) {
+        finishReject(err);
+      }
     });
   }
 
