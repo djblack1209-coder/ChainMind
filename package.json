@@ -1,0 +1,110 @@
+{
+  "name": "chainmind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ChainMind - AI 链式讨论平台桌面版",
+  "author": "ChainMind Team",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint electron/ lib/ stores/ app/ components/",
+    "pretest": "cp node_modules/better-sqlite3/build/Release/better_sqlite3.node node_modules/better-sqlite3/build/Release/better_sqlite3.node.electron && npm rebuild better-sqlite3 --silent",
+    "test": "vitest --run",
+    "posttest": "cp node_modules/better-sqlite3/build/Release/better_sqlite3.node.electron node_modules/better-sqlite3/build/Release/better_sqlite3.node",
+    "electron:dev": "electron .",
+    "electron:build": "next build && electron-builder",
+    "electron:pack": "next build && electron-builder --dir"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^11.10.0",
+    "idb-keyval": "^6.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "reactflow": "^11.11.4",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.3",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.17.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.39.3",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.6.3",
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.chainmind.app",
+    "productName": "ChainMind",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app/.next/standalone"
+      },
+      {
+        "from": ".next/static",
+        "to": "app/.next/standalone/.next/static"
+      },
+      {
+        "from": "public",
+        "to": "app/.next/standalone/public"
+      }
+    ],
+    "npmRebuild": false,
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  }
+}

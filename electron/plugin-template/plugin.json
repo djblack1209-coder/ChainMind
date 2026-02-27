@@ -1,0 +1,12 @@
+{
+  "name": "example-plugin",
+  "version": "1.0.0",
+  "description": "ChainMind 插件示例模板 — 展示插件开发规范",
+  "author": "ChainMind",
+  "autoLoad": true,
+  "main": "index.js",
+  "capabilities": ["tool", "panel"],
+  "config": {
+    "greeting": "Hello from example plugin!"
+  }
+}
