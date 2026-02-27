@@ -87,6 +87,7 @@ export const useChainStore = create<ChainState>()((set, get) => ({
           : d
       ),
     }));
+    get().saveDiscussions().catch(() => {});
   },
 
   updateTurn: (discId, turnId, partial) => {
@@ -101,6 +102,7 @@ export const useChainStore = create<ChainState>()((set, get) => ({
           : d
       ),
     }));
+    get().saveDiscussions().catch(() => {});
   },
 
   setDiscussionStatus: (discId, status) => {
@@ -118,6 +120,7 @@ export const useChainStore = create<ChainState>()((set, get) => ({
         d.id === discId ? { ...d, currentRound: round, updatedAt: Date.now() } : d
       ),
     }));
+    get().saveDiscussions().catch(() => {});
   },
 
   updateAgents: (discId, agents) => {
