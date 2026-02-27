@@ -45,7 +45,7 @@ export const useWorkflowStore = create<WorkflowState>()((set, get) => ({
     try {
       const stored = await storageGet<Workflow[]>(STORAGE_KEY);
       if (stored && stored.length > 0) {
-        set({ workflows: stored, loaded: true });
+        set({ workflows: stored, activeId: stored[0].id, loaded: true });
       } else {
         set({ loaded: true });
       }
@@ -72,7 +72,14 @@ export const useWorkflowStore = create<WorkflowState>()((set, get) => ({
     // Reset flow store
     const flow = useFlowStore.getState();
     flow.resetAllNodeStatus();
-    useFlowStore.setState({ nodes: [], edges: [], globalFacts: '', selectedNodeId: null, userInput: '' });
+    useFlowStore.setState({
+      nodes: [],
+      edges: [],
+      globalFacts: '',
+      selectedNodeId: null,
+      userInput: '',
+      isExecuting: false,
+    });
 
     return id;
   },
@@ -123,7 +130,14 @@ export const useWorkflowStore = create<WorkflowState>()((set, get) => ({
     if (newActive) {
       get().loadWorkflow(newActive);
     } else {
-      useFlowStore.setState({ nodes: [], edges: [], globalFacts: '', selectedNodeId: null });
+      useFlowStore.setState({
+        nodes: [],
+        edges: [],
+        globalFacts: '',
+        selectedNodeId: null,
+        userInput: '',
+        isExecuting: false,
+      });
     }
   },
 
