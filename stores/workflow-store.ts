@@ -42,10 +42,14 @@ export const useWorkflowStore = create<WorkflowState>()((set, get) => ({
   loaded: false,
 
   loadWorkflows: async () => {
-    const stored = await storageGet<Workflow[]>(STORAGE_KEY);
-    if (stored && stored.length > 0) {
-      set({ workflows: stored, loaded: true });
-    } else {
+    try {
+      const stored = await storageGet<Workflow[]>(STORAGE_KEY);
+      if (stored && stored.length > 0) {
+        set({ workflows: stored, loaded: true });
+      } else {
+        set({ loaded: true });
+      }
+    } catch {
       set({ loaded: true });
     }
   },
