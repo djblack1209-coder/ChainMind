@@ -59,7 +59,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       conversations: [conv, ...s.conversations],
       activeConversationId: id,
     }));
-    get().saveConversations();
+    get().saveConversations().catch(() => {});
     return id;
   },
 
@@ -115,7 +115,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         c.id === convId ? { ...c, messages: [], title: '新对话', updatedAt: Date.now() } : c
       ),
     }));
-    get().saveConversations();
+    get().saveConversations().catch(() => {});
   },
 
   setSystemPrompt: (convId, prompt) => {
@@ -124,7 +124,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         c.id === convId ? { ...c, systemPrompt: prompt, updatedAt: Date.now() } : c
       ),
     }));
-    get().saveConversations();
+    get().saveConversations().catch(() => {});
   },
 
   saveConversations: async () => {

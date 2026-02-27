@@ -88,6 +88,37 @@ describe('chain-store persistence', () => {
     );
   });
 
+  it('persists after createDiscussion', async () => {
+    const { useChainStore } = await import('../stores/chain-store');
+
+    useChainStore.setState({
+      discussions: [],
+      activeDiscussionId: null,
+      loaded: true,
+    });
+
+    const createdId = useChainStore.getState().createDiscussion(
+      'New Discussion',
+      'Topic',
+      [makeAgent()],
+      2,
+      'sequential'
+    );
+    await Promise.resolve();
+
+    expect(storageSetMock).toHaveBeenCalledTimes(1);
+    expect(storageSetMock).toHaveBeenCalledWith(
+      'chain-discussions',
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: createdId,
+          title: 'New Discussion',
+          topic: 'Topic',
+        }),
+      ])
+    );
+  });
+
   it('persists after updateTurn', async () => {
     const { useChainStore } = await import('../stores/chain-store');
 
@@ -136,6 +167,58 @@ describe('chain-store persistence', () => {
       'chain-discussions',
       expect.arrayContaining([
         expect.objectContaining({ id: 'disc-1', currentRound: 2 }),
+      ])
+    );
+  });
+
+  it('persists after setDiscussionStatus', async () => {
+    const { useChainStore } = await import('../stores/chain-store');
+
+    useChainStore.setState({
+      discussions: [makeDiscussion()],
+      activeDiscussionId: 'disc-1',
+      loaded: true,
+    });
+
+    useChainStore.getState().setDiscussionStatus('disc-1', 'running');
+    await Promise.resolve();
+
+    expect(storageSetMock).toHaveBeenCalledTimes(1);
+    expect(storageSetMock).toHaveBeenCalledWith(
+      'chain-discussions',
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'disc-1', status: 'running' }),
+      ])
+    );
+  });
+
+  it('persists after updateAgents', async () => {
+    const { useChainStore } = await import('../stores/chain-store');
+
+    useChainStore.setState({
+      discussions: [makeDiscussion()],
+      activeDiscussionId: 'disc-1',
+      loaded: true,
+    });
+
+    const newAgent: ChainAgent = {
+      ...makeAgent(),
+      id: 'agent-2',
+      name: 'Planner',
+    };
+    useChainStore.getState().updateAgents('disc-1', [newAgent]);
+    await Promise.resolve();
+
+    expect(storageSetMock).toHaveBeenCalledTimes(1);
+    expect(storageSetMock).toHaveBeenCalledWith(
+      'chain-discussions',
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'disc-1',
+          agents: expect.arrayContaining([
+            expect.objectContaining({ id: 'agent-2', name: 'Planner' }),
+          ]),
+        }),
       ])
     );
   });
