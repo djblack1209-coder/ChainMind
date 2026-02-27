@@ -8,6 +8,25 @@ import { existsSync, realpathSync } from 'fs';
 import { homedir } from 'os';
 import { isAuthorizedExecRequest } from '@/lib/internal-route-auth';
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === 'string') {
+    const trimmed = error.trim();
+    return trimmed || fallback;
+  }
+  if (error instanceof Error) {
+    const trimmed = error.message.trim();
+    return trimmed || fallback;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') {
+      const trimmed = message.trim();
+      return trimmed || fallback;
+    }
+  }
+  return fallback;
+}
+
 function safeRealpath(p: string): string {
   try {
     return realpathSync(p);
@@ -119,8 +138,8 @@ export async function POST(req: NextRequest) {
             size: stats.size,
             modified: stats.mtime.toISOString(),
           });
-        } catch (e: any) {
-          return NextResponse.json({ ok: false, error: e.message }, { status: 404 });
+        } catch (e) {
+          return NextResponse.json({ ok: false, error: getErrorMessage(e, '读取文件失败') }, { status: 404 });
         }
       }
 
@@ -143,8 +162,8 @@ export async function POST(req: NextRequest) {
           if (!existsSync(dir)) await mkdir(dir, { recursive: true });
           await writeFile(filePath, content, encoding as BufferEncoding);
           return NextResponse.json({ ok: true, bytesWritten: Buffer.byteLength(content) });
-        } catch (e: any) {
-          return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+        } catch (e) {
+          return NextResponse.json({ ok: false, error: getErrorMessage(e, '写入文件失败') }, { status: 500 });
         }
       }
 
@@ -164,8 +183,8 @@ export async function POST(req: NextRequest) {
               path: join(dirPath, e.name),
             }));
           return NextResponse.json({ ok: true, items });
-        } catch (e: any) {
-          return NextResponse.json({ ok: false, error: e.message }, { status: 404 });
+        } catch (e) {
+          return NextResponse.json({ ok: false, error: getErrorMessage(e, '读取目录失败') }, { status: 404 });
         }
       }
 

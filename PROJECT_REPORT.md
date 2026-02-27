@@ -56,12 +56,15 @@ ChainMind 是一个基于 Electron + Next.js 14 + React 18 的桌面 AI 协作�
 - 新增 `app/admin/_utils/toast-error.ts`，统一管理后台错误消息提取与 Toast 展示逻辑。
 - 完成 11 个管理页面的错误处理收敛，替换重复的 `catch (e: any)` + `toast("error", ...)` 模式，减少重复代码和兜底分支不一致问题。
 - 保持现有交互不变，仅收敛错误处理实现，属于低风险可维护性改进。
+- 收尾清理剩余 4 处 `catch (e: any)`：`app/admin/profile/page.tsx` 1 处、`app/api/files/route.ts` 3 处，统一改为 `unknown` 安全提取错误信息。
+- 修复个人中心提示语义：保存失败改为红色错误提示，避免与成功提示样式混淆。
 
 ### ✅ 验证结果
 - `npx vitest --run`：10/10 文件通过，100/100 测试通过。
 - `npm run lint`：通过。
 - `npx tsc --noEmit`：通过。
 - 环境提示：仍有 npm v11 与 Node v18 的已知版本告警，不影响当前校验结果。
+- 代码卫生：全仓库 `catch (e: any)` 已清零。
 
 ### ✅ 备份状态
 - 已按增量修复策略提交并同步到 GitHub `main`（作为远端备份基线）。

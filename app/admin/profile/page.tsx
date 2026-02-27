@@ -6,6 +6,25 @@ import React, { useState } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { FormField, FormInput, AdminModal } from "@/components/AdminTable";
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === "string") {
+    const trimmed = error.trim();
+    return trimmed || fallback;
+  }
+  if (error instanceof Error) {
+    const trimmed = error.message.trim();
+    return trimmed || fallback;
+  }
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") {
+      const trimmed = message.trim();
+      return trimmed || fallback;
+    }
+  }
+  return fallback;
+}
+
 export default function ProfilePage() {
   const { user, updateUser, changePassword } = useAuthStore();
 
@@ -20,7 +39,7 @@ export default function ProfilePage() {
   const [pwdForm, setPwdForm] = useState({ oldPwd: "", newPwd: "", confirmPwd: "" });
   const [pwdError, setPwdError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const db = typeof window !== "undefined" ? window.electronAPI?.db : null;
 
@@ -31,10 +50,10 @@ export default function ProfilePage() {
       await db.user.update(user.id, form);
       updateUser(form);
       setEditing(false);
-      setMsg("保存成功");
-      setTimeout(() => setMsg(""), 2000);
-    } catch (e: any) {
-      setMsg(e.message || "保存失败");
+      setMsg({ text: "保存成功", type: "success" });
+      setTimeout(() => setMsg(null), 2000);
+    } catch (e) {
+      setMsg({ text: getErrorMessage(e, "保存失败"), type: "error" });
     }
     setSaving(false);
   };
@@ -57,8 +76,8 @@ export default function ProfilePage() {
     if (result.ok) {
       setPwdOpen(false);
       setPwdForm({ oldPwd: "", newPwd: "", confirmPwd: "" });
-      setMsg("密码修改成功");
-      setTimeout(() => setMsg(""), 2000);
+      setMsg({ text: "密码修改成功", type: "success" });
+      setTimeout(() => setMsg(null), 2000);
     } else {
       setPwdError(result.error || "修改失败");
     }
@@ -72,8 +91,8 @@ export default function ProfilePage() {
     <div className="max-w-2xl">
       {/* Success message */}
       {msg && (
-        <div className="mb-4 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
-          {msg}
+        <div className={`mb-4 px-4 py-2 rounded-lg border text-sm ${msg.type === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-400"}`}>
+          {msg.text}
         </div>
       )}
 
