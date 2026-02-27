@@ -31,8 +31,10 @@ export default function ConfigPage() {
     try {
       const g = await db.config.getGroups();
       setGroups(g || []);
-    } catch (e) { console.error(e); }
-  }, [db]);
+    } catch (e: any) {
+      toast("error", e?.message || "加载配置分组失败");
+    }
+  }, [db, toast]);
 
   const fetchData = useCallback(async () => {
     if (!db) return;
@@ -40,9 +42,11 @@ export default function ConfigPage() {
     try {
       const list = await db.config.list(activeGroup || undefined);
       setData(list || []);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载配置失败");
+    }
     setLoading(false);
-  }, [db, activeGroup]);
+  }, [db, activeGroup, toast]);
 
   useEffect(() => { fetchGroups(); }, [fetchGroups]);
   useEffect(() => { fetchData(); }, [fetchData]);

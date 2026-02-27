@@ -38,9 +38,11 @@ export default function PluginPage() {
     try {
       const list = await db.plugin.list();
       setData(list || []);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载插件列表失败");
+    }
     setLoading(false);
-  }, [db]);
+  }, [db, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

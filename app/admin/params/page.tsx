@@ -36,9 +36,11 @@ export default function ParamsPage() {
       const res = await db.params.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载系统参数失败");
+    }
     setLoading(false);
-  }, [db, page, keyword]);
+  }, [db, page, keyword, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

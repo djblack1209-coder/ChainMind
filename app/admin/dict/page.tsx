@@ -53,9 +53,11 @@ export default function DictPage() {
       const res = await db.dict.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载字典列表失败");
+    }
     setLoading(false);
-  }, [db, page, keyword]);
+  }, [db, page, keyword, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -64,8 +66,10 @@ export default function DictPage() {
     try {
       const list = await db.dict.getDetails(dictId);
       setDetails(list || []);
-    } catch (e) { console.error(e); }
-  }, [db]);
+    } catch (e: any) {
+      toast("error", e?.message || "加载字典详情失败");
+    }
+  }, [db, toast]);
 
   const openCreate = () => {
     setEditing(null);

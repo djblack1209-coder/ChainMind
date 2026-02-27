@@ -48,17 +48,21 @@ export default function ApiPage() {
       const res = await db.api.list(page, pageSize, keyword, filterMethod, filterGroup);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载API列表失败");
+    }
     setLoading(false);
-  }, [db, page, keyword, filterMethod, filterGroup]);
+  }, [db, page, keyword, filterMethod, filterGroup, toast]);
 
   const fetchGroups = useCallback(async () => {
     if (!db) return;
     try {
       const g = await db.api.getGroups();
       setGroups(g || []);
-    } catch (e) { console.error(e); }
-  }, [db]);
+    } catch (e: any) {
+      toast("error", e?.message || "加载API分组失败");
+    }
+  }, [db, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchGroups(); }, [fetchGroups]);

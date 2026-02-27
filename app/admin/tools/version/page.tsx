@@ -35,9 +35,11 @@ export default function VersionPage() {
       const res = await db.version.list(page, pageSize);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载版本列表失败");
+    }
     setLoading(false);
-  }, [db, page]);
+  }, [db, page, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

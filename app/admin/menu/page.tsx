@@ -41,9 +41,11 @@ export default function MenuPage() {
       const ids = new Set<number>();
       (data || []).forEach((n: MenuNode) => ids.add(n.id));
       setExpandedIds(ids);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载菜单数据失败");
+    }
     setLoading(false);
-  }, [db]);
+  }, [db, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

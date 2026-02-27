@@ -60,21 +60,21 @@ export default function UserPage() {
       const res = await db.user.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) {
-      console.error("Failed to fetch users:", e);
+    } catch (e: any) {
+      toast("error", e?.message || "加载用户列表失败");
     }
     setLoading(false);
-  }, [db, page, keyword]);
+  }, [db, page, keyword, toast]);
 
   const fetchAuthorities = useCallback(async () => {
     if (!db) return;
     try {
       const list = await db.authority.list();
       setAuthorities(list || []);
-    } catch (e) {
-      console.error("Failed to fetch authorities:", e);
+    } catch (e: any) {
+      toast("error", e?.message || "加载角色列表失败");
     }
-  }, [db]);
+  }, [db, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { fetchAuthorities(); }, [fetchAuthorities]);

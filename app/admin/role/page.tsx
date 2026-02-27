@@ -55,11 +55,11 @@ export default function RolePage() {
     try {
       const list = await db.authority.list();
       setData(list || []);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      toast("error", e?.message || "加载角色列表失败");
     }
     setLoading(false);
-  }, [db]);
+  }, [db, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

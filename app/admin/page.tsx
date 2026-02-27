@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
+import { useToast } from "@/components/Toast";
 
 interface Stats {
   users: number;
@@ -32,6 +33,7 @@ const STAT_CARDS = [
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
     users: 0, roles: 0, menus: 0, apis: 0, plugins: 0,
     opLogs: 0, loginLogs: 0, errorLogs: 0, announcements: 0,
@@ -60,9 +62,11 @@ export default function AdminDashboard() {
       // Recent login logs
       const recent = await db.loginLog.list(1, 5);
       setRecentLogs(recent.list || []);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载仪表盘数据失败");
+    }
     setLoading(false);
-  }, [db]);
+  }, [db, toast]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 

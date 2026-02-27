@@ -42,9 +42,11 @@ export default function AnnouncementPage() {
       const res = await db.announcement.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      toast("error", e?.message || "加载公告列表失败");
+    }
     setLoading(false);
-  }, [db, page, keyword]);
+  }, [db, page, keyword, toast]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
