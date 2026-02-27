@@ -229,16 +229,16 @@ export interface ElectronAPI {
   queryLogs: (params?: { date?: string; type?: string; limit?: number }) => Promise<{ ok: boolean; data: LogEntry[] }>;
 
   // Config (legacy module)
-  getConfig: (keyPath: string) => Promise<any>;
-  setConfig: (keyPath: string, value: any) => Promise<void>;
-  getAllConfig: () => Promise<any>;
-  resetConfig: () => Promise<void>;
+  getConfig: (keyPath: string) => Promise<{ ok: boolean; data: any }>;
+  setConfig: (keyPath: string, value: any) => Promise<{ ok: boolean }>;
+  getAllConfig: () => Promise<{ ok: boolean; data: any }>;
+  resetConfig: () => Promise<{ ok: boolean }>;
 
   // Storage
-  saveLocalFile: (fileName: string, base64Data: string) => Promise<any>;
-  listLocalFiles: (subDir?: string) => Promise<any>;
-  deleteLocalFile: (fileName: string) => Promise<any>;
-  uploadToCloud: (params: any) => Promise<any>;
+  saveLocalFile: (fileName: string, base64Data: string) => Promise<{ ok: boolean; path?: string; name?: string; size?: number; error?: string }>;
+  listLocalFiles: (subDir?: string) => Promise<{ ok: boolean; data: Array<{ name: string; type: 'dir' | 'file'; path: string; size: number }> }>;
+  deleteLocalFile: (fileName: string) => Promise<{ ok: boolean }>;
+  uploadToCloud: (params: any) => Promise<{ ok: boolean; url?: string; name?: string; path?: string; size?: number; error?: string }>;
 
   // Window controls
   minimize: () => Promise<void>;
@@ -247,10 +247,6 @@ export interface ElectronAPI {
 
   // Database services (SQLite)
   db: DbNamespace;
-
-  // Events
-  onUpdateAvailable: (cb: (info: any) => void) => void;
-  onPluginEvent: (cb: (data: any) => void) => void;
 }
 
 export interface PluginInfo {

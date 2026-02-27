@@ -16,18 +16,21 @@ function registerCoreIpcHandlers({ app, ipcMain, secureSecret, windowManager, ge
 
   ipcMain.handle('system:info', () => {
     return {
-      platform: process.platform,
-      arch: process.arch,
-      nodeVersion: process.version,
-      electronVersion: process.versions.electron,
-      chromeVersion: process.versions.chrome,
-      appVersion: app.getVersion(),
-      hostname: os.hostname(),
-      cpus: os.cpus().length,
-      totalMemory: os.totalmem(),
-      freeMemory: os.freemem(),
-      uptime: os.uptime(),
-      dataPath: app.getPath('userData'),
+      ok: true,
+      data: {
+        platform: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        electronVersion: process.versions.electron,
+        chromeVersion: process.versions.chrome,
+        appVersion: app.getVersion(),
+        hostname: os.hostname(),
+        cpus: os.cpus().length,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem(),
+        uptime: os.uptime(),
+        dataPath: app.getPath('userData'),
+      },
     };
   });
 
