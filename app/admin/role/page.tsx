@@ -10,6 +10,7 @@ import AdminTable, {
   FormInput,
 } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Authority {
   authority_id: number;
@@ -55,8 +56,8 @@ export default function RolePage() {
     try {
       const list = await db.authority.list();
       setData(list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载角色列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载角色列表失败");
     }
     setLoading(false);
   }, [db, toast]);
@@ -86,8 +87,8 @@ export default function RolePage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) {
-      toast("error", e.message || "操作失败");
+    } catch (e) {
+      toastError(toast, e, "操作失败");
     }
   };
 
@@ -96,8 +97,8 @@ export default function RolePage() {
     try {
       await db.authority.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除角色失败");
+    } catch (e) {
+      toastError(toast, e, "删除角色失败");
     }
   };
 
@@ -110,8 +111,8 @@ export default function RolePage() {
       setAllMenus(tree || []);
       setCheckedMenuIds(new Set(ids || []));
       setMenuModalOpen(true);
-    } catch (e: any) {
-      toast("error", e?.message || "加载角色菜单权限失败");
+    } catch (e) {
+      toastError(toast, e, "加载角色菜单权限失败");
     }
   };
 
@@ -129,8 +130,8 @@ export default function RolePage() {
     try {
       await db.authority.setMenus(menuTarget.authority_id, Array.from(checkedMenuIds));
       setMenuModalOpen(false);
-    } catch (e: any) {
-      toast("error", e?.message || "保存菜单权限失败");
+    } catch (e) {
+      toastError(toast, e, "保存菜单权限失败");
     }
   };
 
@@ -142,8 +143,8 @@ export default function RolePage() {
       const rules = await db.authority.getCasbinRules(row.authority_id);
       setCasbinRules(rules || []);
       setCasbinOpen(true);
-    } catch (e: any) {
-      toast("error", e?.message || "加载API权限规则失败");
+    } catch (e) {
+      toastError(toast, e, "加载API权限规则失败");
     }
   };
 
@@ -162,8 +163,8 @@ export default function RolePage() {
     try {
       await db.authority.setCasbinRules(casbinTarget.authority_id, casbinRules);
       setCasbinOpen(false);
-    } catch (e: any) {
-      toast("error", e?.message || "保存API权限失败");
+    } catch (e) {
+      toastError(toast, e, "保存API权限失败");
     }
   };
 

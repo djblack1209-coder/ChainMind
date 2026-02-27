@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AdminModal, FormField, FormInput, StatusBadge } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface PluginRecord {
   id: number;
@@ -38,8 +39,8 @@ export default function PluginPage() {
     try {
       const list = await db.plugin.list();
       setData(list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载插件列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载插件列表失败");
     }
     setLoading(false);
   }, [db, toast]);
@@ -51,8 +52,8 @@ export default function PluginPage() {
     try {
       await db.plugin.toggle(name, enabled);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "切换插件状态失败");
+    } catch (e) {
+      toastError(toast, e, "切换插件状态失败");
     }
   };
 
@@ -61,8 +62,8 @@ export default function PluginPage() {
     try {
       await db.plugin.del(name);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除插件失败");
+    } catch (e) {
+      toastError(toast, e, "删除插件失败");
     }
   };
 
@@ -72,7 +73,7 @@ export default function PluginPage() {
       await db.plugin.register(form);
       setRegisterOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) { toastError(toast, e, "操作失败"); }
   };
 
   const openConfig = (p: PluginRecord) => {
@@ -88,7 +89,7 @@ export default function PluginPage() {
       await db.plugin.updateConfig(configTarget.name, parsed);
       setConfigOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "JSON格式错误"); }
+    } catch (e) { toastError(toast, e, "JSON格式错误"); }
   };
 
   return (

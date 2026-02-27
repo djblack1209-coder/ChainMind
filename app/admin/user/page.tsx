@@ -12,6 +12,7 @@ import AdminTable, {
   StatusBadge,
 } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface User {
   id: number;
@@ -60,8 +61,8 @@ export default function UserPage() {
       const res = await db.user.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载用户列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载用户列表失败");
     }
     setLoading(false);
   }, [db, page, keyword, toast]);
@@ -71,8 +72,8 @@ export default function UserPage() {
     try {
       const list = await db.authority.list();
       setAuthorities(list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载角色列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载角色列表失败");
     }
   }, [db, toast]);
 
@@ -124,8 +125,8 @@ export default function UserPage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) {
-      toast("error", e.message || "操作失败");
+    } catch (e) {
+      toastError(toast, e, "操作失败");
     }
   };
 
@@ -134,8 +135,8 @@ export default function UserPage() {
     try {
       await db.user.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除用户失败");
+    } catch (e) {
+      toastError(toast, e, "删除用户失败");
     }
   };
 
@@ -145,8 +146,8 @@ export default function UserPage() {
       await db.user.resetPassword(resetUserId, newPassword);
       setResetOpen(false);
       setNewPassword("");
-    } catch (e: any) {
-      toast("error", e?.message || "重置密码失败");
+    } catch (e) {
+      toastError(toast, e, "重置密码失败");
     }
   };
 

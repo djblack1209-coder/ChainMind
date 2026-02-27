@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AdminModal, FormField, FormInput, ActionButton } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface ConfigItem {
   id: number;
@@ -31,8 +32,8 @@ export default function ConfigPage() {
     try {
       const g = await db.config.getGroups();
       setGroups(g || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载配置分组失败");
+    } catch (e) {
+      toastError(toast, e, "加载配置分组失败");
     }
   }, [db, toast]);
 
@@ -42,8 +43,8 @@ export default function ConfigPage() {
     try {
       const list = await db.config.list(activeGroup || undefined);
       setData(list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载配置失败");
+    } catch (e) {
+      toastError(toast, e, "加载配置失败");
     }
     setLoading(false);
   }, [db, activeGroup, toast]);
@@ -63,7 +64,9 @@ export default function ConfigPage() {
       setModalOpen(false);
       fetchData();
       fetchGroups();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) {
+      toastError(toast, e, "操作失败");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -71,8 +74,8 @@ export default function ConfigPage() {
     try {
       await db.config.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除配置失败");
+    } catch (e) {
+      toastError(toast, e, "删除配置失败");
     }
   };
 
@@ -81,8 +84,8 @@ export default function ConfigPage() {
     try {
       await db.config.set(item.key, newValue, item.group_name, item.description);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "更新配置失败");
+    } catch (e) {
+      toastError(toast, e, "更新配置失败");
     }
   };
 

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Stats {
   users: number;
@@ -62,8 +63,8 @@ export default function AdminDashboard() {
       // Recent login logs
       const recent = await db.loginLog.list(1, 5);
       setRecentLogs(recent.list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载仪表盘数据失败");
+    } catch (e) {
+      toastError(toast, e, "加载仪表盘数据失败");
     }
     setLoading(false);
   }, [db, toast]);

@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminTable, { ActionButton, AdminModal, FormField, FormInput } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Version {
   id: number;
@@ -35,8 +36,8 @@ export default function VersionPage() {
       const res = await db.version.list(page, pageSize);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载版本列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载版本列表失败");
     }
     setLoading(false);
   }, [db, page, toast]);
@@ -54,7 +55,9 @@ export default function VersionPage() {
       await db.version.create({ ...form, force_update: Number(form.force_update) });
       setModalOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) {
+      toastError(toast, e, "操作失败");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -62,8 +65,8 @@ export default function VersionPage() {
     try {
       await db.version.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除版本失败");
+    } catch (e) {
+      toastError(toast, e, "删除版本失败");
     }
   };
 

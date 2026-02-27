@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminTable, { ActionButton, AdminModal, FormField, FormInput } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Param {
   id: number;
@@ -36,8 +37,8 @@ export default function ParamsPage() {
       const res = await db.params.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载系统参数失败");
+    } catch (e) {
+      toastError(toast, e, "加载系统参数失败");
     }
     setLoading(false);
   }, [db, page, keyword, toast]);
@@ -66,7 +67,9 @@ export default function ParamsPage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) {
+      toastError(toast, e, "操作失败");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -74,8 +77,8 @@ export default function ParamsPage() {
     try {
       await db.params.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除参数失败");
+    } catch (e) {
+      toastError(toast, e, "删除参数失败");
     }
   };
 

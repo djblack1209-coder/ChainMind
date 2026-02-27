@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminTable, { ActionButton, AdminModal, FormField, FormInput, FormSelect } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface ApiRecord {
   id: number;
@@ -48,8 +49,8 @@ export default function ApiPage() {
       const res = await db.api.list(page, pageSize, keyword, filterMethod, filterGroup);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载API列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载API列表失败");
     }
     setLoading(false);
   }, [db, page, keyword, filterMethod, filterGroup, toast]);
@@ -59,8 +60,8 @@ export default function ApiPage() {
     try {
       const g = await db.api.getGroups();
       setGroups(g || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载API分组失败");
+    } catch (e) {
+      toastError(toast, e, "加载API分组失败");
     }
   }, [db, toast]);
 
@@ -90,7 +91,9 @@ export default function ApiPage() {
       setModalOpen(false);
       fetchData();
       fetchGroups();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) {
+      toastError(toast, e, "操作失败");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -98,8 +101,8 @@ export default function ApiPage() {
     try {
       await db.api.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除API失败");
+    } catch (e) {
+      toastError(toast, e, "删除API失败");
     }
   };
 

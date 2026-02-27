@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminTable, { ActionButton, AdminModal, FormField, FormInput, FormSelect, StatusBadge } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Announcement {
   id: number;
@@ -42,8 +43,8 @@ export default function AnnouncementPage() {
       const res = await db.announcement.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载公告列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载公告列表失败");
     }
     setLoading(false);
   }, [db, page, keyword, toast]);
@@ -73,7 +74,7 @@ export default function AnnouncementPage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) { toastError(toast, e, "操作失败"); }
   };
 
   const handleDelete = async (id: number) => {
@@ -81,8 +82,8 @@ export default function AnnouncementPage() {
     try {
       await db.announcement.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除公告失败");
+    } catch (e) {
+      toastError(toast, e, "删除公告失败");
     }
   };
 

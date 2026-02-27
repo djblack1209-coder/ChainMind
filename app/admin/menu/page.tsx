@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { AdminModal, FormField, FormInput, FormSelect, ActionButton } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface MenuNode {
   id: number;
@@ -41,8 +42,8 @@ export default function MenuPage() {
       const ids = new Set<number>();
       (data || []).forEach((n: MenuNode) => ids.add(n.id));
       setExpandedIds(ids);
-    } catch (e: any) {
-      toast("error", e?.message || "加载菜单数据失败");
+    } catch (e) {
+      toastError(toast, e, "加载菜单数据失败");
     }
     setLoading(false);
   }, [db, toast]);
@@ -98,7 +99,9 @@ export default function MenuPage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) {
+      toastError(toast, e, "操作失败");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -106,8 +109,8 @@ export default function MenuPage() {
     try {
       await db.menu.del(id);
       fetchData();
-    } catch (e: any) {
-      toast("error", e?.message || "删除菜单失败");
+    } catch (e) {
+      toastError(toast, e, "删除菜单失败");
     }
   };
 

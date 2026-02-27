@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminTable, { ActionButton, AdminModal, FormField, FormInput } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
+import { toastError } from "@/app/admin/_utils/toast-error";
 
 interface Dict {
   id: number;
@@ -53,8 +54,8 @@ export default function DictPage() {
       const res = await db.dict.list(page, pageSize, keyword);
       setData(res.list || []);
       setTotal(res.total || 0);
-    } catch (e: any) {
-      toast("error", e?.message || "加载字典列表失败");
+    } catch (e) {
+      toastError(toast, e, "加载字典列表失败");
     }
     setLoading(false);
   }, [db, page, keyword, toast]);
@@ -66,8 +67,8 @@ export default function DictPage() {
     try {
       const list = await db.dict.getDetails(dictId);
       setDetails(list || []);
-    } catch (e: any) {
-      toast("error", e?.message || "加载字典详情失败");
+    } catch (e) {
+      toastError(toast, e, "加载字典详情失败");
     }
   }, [db, toast]);
 
@@ -93,7 +94,7 @@ export default function DictPage() {
       }
       setModalOpen(false);
       fetchData();
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) { toastError(toast, e, "操作失败"); }
   };
 
   const handleDelete = async (id: number) => {
@@ -102,8 +103,8 @@ export default function DictPage() {
       await db.dict.del(id);
       fetchData();
       if (detailDict?.id === id) setDetailDict(null);
-    } catch (e: any) {
-      toast("error", e?.message || "删除字典失败");
+    } catch (e) {
+      toastError(toast, e, "删除字典失败");
     }
   };
 
@@ -134,7 +135,7 @@ export default function DictPage() {
       }
       setDetailModalOpen(false);
       fetchDetails(detailDict.id);
-    } catch (e: any) { toast("error", e.message || "操作失败"); }
+    } catch (e) { toastError(toast, e, "操作失败"); }
   };
 
   const handleDeleteDetail = async (id: number) => {
@@ -142,8 +143,8 @@ export default function DictPage() {
     try {
       await db.dict.delDetail(id);
       fetchDetails(detailDict.id);
-    } catch (e: any) {
-      toast("error", e?.message || "删除字典详情失败");
+    } catch (e) {
+      toastError(toast, e, "删除字典详情失败");
     }
   };
 
