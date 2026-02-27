@@ -95,8 +95,12 @@ export default function ApiPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该API？")) return;
-    await db.api.del(id);
-    fetchData();
+    try {
+      await db.api.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除API失败");
+    }
   };
 
   const columns = [

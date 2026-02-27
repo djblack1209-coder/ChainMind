@@ -68,14 +68,22 @@ export default function ConfigPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除？")) return;
-    await db.config.del(id);
-    fetchData();
+    try {
+      await db.config.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除配置失败");
+    }
   };
 
   const handleInlineEdit = async (item: ConfigItem, newValue: string) => {
     if (!db || newValue === item.value) return;
-    await db.config.set(item.key, newValue, item.group_name, item.description);
-    fetchData();
+    try {
+      await db.config.set(item.key, newValue, item.group_name, item.description);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "更新配置失败");
+    }
   };
 
   return (

@@ -98,9 +98,13 @@ export default function DictPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该字典？")) return;
-    await db.dict.del(id);
-    fetchData();
-    if (detailDict?.id === id) setDetailDict(null);
+    try {
+      await db.dict.del(id);
+      fetchData();
+      if (detailDict?.id === id) setDetailDict(null);
+    } catch (e: any) {
+      toast("error", e?.message || "删除字典失败");
+    }
   };
 
   const openDetails = (row: Dict) => {
@@ -135,8 +139,12 @@ export default function DictPage() {
 
   const handleDeleteDetail = async (id: number) => {
     if (!db || !detailDict || !confirm("确定删除？")) return;
-    await db.dict.delDetail(id);
-    fetchDetails(detailDict.id);
+    try {
+      await db.dict.delDetail(id);
+      fetchDetails(detailDict.id);
+    } catch (e: any) {
+      toast("error", e?.message || "删除字典详情失败");
+    }
   };
 
   const columns = [

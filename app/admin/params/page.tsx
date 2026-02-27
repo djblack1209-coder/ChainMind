@@ -71,8 +71,12 @@ export default function ParamsPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除？")) return;
-    await db.params.del(id);
-    fetchData();
+    try {
+      await db.params.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除参数失败");
+    }
   };
 
   const columns = [

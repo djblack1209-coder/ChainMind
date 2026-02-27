@@ -78,8 +78,12 @@ export default function AnnouncementPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该公告？")) return;
-    await db.announcement.del(id);
-    fetchData();
+    try {
+      await db.announcement.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除公告失败");
+    }
   };
 
   const TYPE_MAP: Record<string, string> = {

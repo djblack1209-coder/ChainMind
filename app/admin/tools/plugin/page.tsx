@@ -48,14 +48,22 @@ export default function PluginPage() {
 
   const handleToggle = async (name: string, enabled: boolean) => {
     if (!db) return;
-    await db.plugin.toggle(name, enabled);
-    fetchData();
+    try {
+      await db.plugin.toggle(name, enabled);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "切换插件状态失败");
+    }
   };
 
   const handleDelete = async (name: string) => {
     if (!db || !confirm("确定删除该插件？")) return;
-    await db.plugin.del(name);
-    fetchData();
+    try {
+      await db.plugin.del(name);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除插件失败");
+    }
   };
 
   const handleRegister = async () => {

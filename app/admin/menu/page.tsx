@@ -103,8 +103,12 @@ export default function MenuPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该菜单及其子菜单？")) return;
-    await db.menu.del(id);
-    fetchData();
+    try {
+      await db.menu.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除菜单失败");
+    }
   };
 
   const renderTree = (nodes: MenuNode[], depth = 0): React.ReactNode =>

@@ -93,18 +93,26 @@ export default function RolePage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该角色？")) return;
-    await db.authority.del(id);
-    fetchData();
+    try {
+      await db.authority.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除角色失败");
+    }
   };
 
   // Menu assignment
   const openMenuAssign = async (row: Authority) => {
     if (!db) return;
-    setMenuTarget(row);
-    const [tree, ids] = await Promise.all([db.menu.tree(), db.authority.getMenuIds(row.authority_id)]);
-    setAllMenus(tree || []);
-    setCheckedMenuIds(new Set(ids || []));
-    setMenuModalOpen(true);
+    try {
+      setMenuTarget(row);
+      const [tree, ids] = await Promise.all([db.menu.tree(), db.authority.getMenuIds(row.authority_id)]);
+      setAllMenus(tree || []);
+      setCheckedMenuIds(new Set(ids || []));
+      setMenuModalOpen(true);
+    } catch (e: any) {
+      toast("error", e?.message || "加载角色菜单权限失败");
+    }
   };
 
   const toggleMenu = (id: number) => {
@@ -118,17 +126,25 @@ export default function RolePage() {
 
   const saveMenus = async () => {
     if (!db || !menuTarget) return;
-    await db.authority.setMenus(menuTarget.authority_id, Array.from(checkedMenuIds));
-    setMenuModalOpen(false);
+    try {
+      await db.authority.setMenus(menuTarget.authority_id, Array.from(checkedMenuIds));
+      setMenuModalOpen(false);
+    } catch (e: any) {
+      toast("error", e?.message || "保存菜单权限失败");
+    }
   };
 
   // Casbin
   const openCasbin = async (row: Authority) => {
     if (!db) return;
-    setCasbinTarget(row);
-    const rules = await db.authority.getCasbinRules(row.authority_id);
-    setCasbinRules(rules || []);
-    setCasbinOpen(true);
+    try {
+      setCasbinTarget(row);
+      const rules = await db.authority.getCasbinRules(row.authority_id);
+      setCasbinRules(rules || []);
+      setCasbinOpen(true);
+    } catch (e: any) {
+      toast("error", e?.message || "加载API权限规则失败");
+    }
   };
 
   const addCasbinRule = () => {
@@ -143,8 +159,12 @@ export default function RolePage() {
 
   const saveCasbin = async () => {
     if (!db || !casbinTarget) return;
-    await db.authority.setCasbinRules(casbinTarget.authority_id, casbinRules);
-    setCasbinOpen(false);
+    try {
+      await db.authority.setCasbinRules(casbinTarget.authority_id, casbinRules);
+      setCasbinOpen(false);
+    } catch (e: any) {
+      toast("error", e?.message || "保存API权限失败");
+    }
   };
 
   const renderMenuTree = (nodes: MenuNode[], depth = 0) =>

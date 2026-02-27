@@ -131,15 +131,23 @@ export default function UserPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除该用户？")) return;
-    await db.user.del(id);
-    fetchData();
+    try {
+      await db.user.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除用户失败");
+    }
   };
 
   const handleResetPassword = async () => {
     if (!db || !newPassword) return;
-    await db.user.resetPassword(resetUserId, newPassword);
-    setResetOpen(false);
-    setNewPassword("");
+    try {
+      await db.user.resetPassword(resetUserId, newPassword);
+      setResetOpen(false);
+      setNewPassword("");
+    } catch (e: any) {
+      toast("error", e?.message || "重置密码失败");
+    }
   };
 
   const authorityName = (id: number) =>

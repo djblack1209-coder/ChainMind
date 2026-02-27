@@ -59,8 +59,12 @@ export default function VersionPage() {
 
   const handleDelete = async (id: number) => {
     if (!db || !confirm("确定删除？")) return;
-    await db.version.del(id);
-    fetchData();
+    try {
+      await db.version.del(id);
+      fetchData();
+    } catch (e: any) {
+      toast("error", e?.message || "删除版本失败");
+    }
   };
 
   const columns = [
