@@ -8,9 +8,25 @@ import { storageGet, storageSet } from '@/lib/storage';
 
 const STORAGE_KEY = 'api-keys-v2';
 const URLS_KEY = 'api-base-urls';
+const SECURE_SECRET_UNAVAILABLE_CODE = 'E_SECURE_SECRET_UNAVAILABLE';
 
 let cachedMasterPassword: string | null = null;
 let masterPasswordPromise: Promise<string> | null = null;
+
+function createSecureSecretUnavailableError() {
+  const err = new Error('Electron secure secret unavailable');
+  (err as Error & { code: string }).code = SECURE_SECRET_UNAVAILABLE_CODE;
+  return err;
+}
+
+function isSecureSecretUnavailableError(err: unknown): err is Error & { code: string } {
+  return Boolean(
+    err
+    && typeof err === 'object'
+    && 'code' in err
+    && (err as { code?: unknown }).code === SECURE_SECRET_UNAVAILABLE_CODE
+  );
+}
 
 // Browser-only fallback when Electron secure secret is unavailable.
 function getBrowserFallbackPassword(): string {
@@ -45,7 +61,8 @@ async function getMasterPassword(): Promise<string> {
         }
         // H-5: In Electron mode, if secure secret is unavailable, throw instead of
         // silently degrading to the weak browser-derived password.
-        console.error('[ApiKeyStore] Electron secure secret unavailable — API key encryption degraded');
+        console.error('[ApiKeyStore] Electron secure secret unavailable — API key operations blocked');
+        throw createSecureSecretUnavailableError();
       }
       return getBrowserFallbackPassword();
     })();
@@ -96,7 +113,15 @@ export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
   },
 
   saveKey: async (provider, apiKey) => {
-    const masterPassword = await getMasterPassword();
+    let masterPassword = '';
+    try {
+      masterPassword = await getMasterPassword();
+    } catch (err) {
+      if (isSecureSecretUnavailableError(err)) {
+        throw new Error('无法获取 Electron 安全密钥，请重启应用后重试');
+      }
+      throw err;
+    }
     const encrypted = await encrypt(apiKey, masterPassword);
     const keys = { ...get().keys, [provider]: encrypted };
     set({ keys });
@@ -109,7 +134,10 @@ export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
     try {
       const masterPassword = await getMasterPassword();
       return await decrypt(payload, masterPassword);
-    } catch {
+    } catch (err) {
+      if (isSecureSecretUnavailableError(err)) {
+        return null;
+      }
       // Backward compatibility: try legacy browser-derived password,
       // then transparently migrate to the stronger Electron-backed secret.
       try {
@@ -136,7 +164,12 @@ export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
   },
 
   testConnection: async (provider, testModel?: string) => {
-    const apiKey = await get().getKey(provider);
+    let apiKey: string | null = null;
+    try {
+      apiKey = await get().getKey(provider);
+    } catch (err) {
+      return { ok: false, latencyMs: 0, error: String(err) };
+    }
     if (!apiKey) return { ok: false, latencyMs: 0, error: '未配置API密钥' };
 
     const baseUrl = get().baseUrls[provider];

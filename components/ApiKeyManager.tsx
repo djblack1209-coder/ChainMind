@@ -40,6 +40,7 @@ export default function ApiKeyManager({ open, onClose }: Props) {
   const [urlInputs, setUrlInputs] = useState<Record<AIProvider, string>>({ claude: '', openai: '', gemini: '' });
   const [testing, setTesting] = useState<Record<AIProvider, boolean>>({ claude: false, openai: false, gemini: false });
   const [results, setResults] = useState<Record<AIProvider, { ok: boolean; latencyMs: number; error?: string } | null>>({ claude: null, openai: null, gemini: null });
+  const [saveErrors, setSaveErrors] = useState<Record<AIProvider, string | null>>({ claude: null, openai: null, gemini: null });
   const [showAdvanced, setShowAdvanced] = useState<Record<AIProvider, boolean>>({ claude: false, openai: false, gemini: false });
   const [testModels, setTestModels] = useState<Record<AIProvider, string>>({ claude: 'claude-3-haiku', openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash' });
   const [justSaved, setJustSaved] = useState<AIProvider | null>(null);
@@ -58,11 +59,20 @@ export default function ApiKeyManager({ open, onClose }: Props) {
   const handleSave = async (p: AIProvider) => {
     const val = inputs[p].trim();
     if (!val) return;
-    await saveKey(p, val);
-    // Also save URL if changed
-    const urlVal = urlInputs[p].trim();
-    if (urlVal && urlVal !== baseUrls[p]) {
-      await setBaseUrl(p, urlVal);
+    setSaveErrors((prev) => ({ ...prev, [p]: null }));
+    try {
+      await saveKey(p, val);
+      // Also save URL if changed
+      const urlVal = urlInputs[p].trim();
+      if (urlVal && urlVal !== baseUrls[p]) {
+        await setBaseUrl(p, urlVal);
+      }
+    } catch (err) {
+      setSaveErrors((prev) => ({
+        ...prev,
+        [p]: `保存失败: ${String(err).slice(0, 120)}`,
+      }));
+      return;
     }
     setInputs((prev) => ({ ...prev, [p]: '' }));
     setResults((prev) => ({ ...prev, [p]: null }));
@@ -73,7 +83,16 @@ export default function ApiKeyManager({ open, onClose }: Props) {
   const handleSaveUrl = async (p: AIProvider) => {
     const urlVal = urlInputs[p].trim();
     if (urlVal) {
-      await setBaseUrl(p, urlVal);
+      setSaveErrors((prev) => ({ ...prev, [p]: null }));
+      try {
+        await setBaseUrl(p, urlVal);
+      } catch (err) {
+        setSaveErrors((prev) => ({
+          ...prev,
+          [p]: `地址保存失败: ${String(err).slice(0, 120)}`,
+        }));
+        return;
+      }
       setJustSaved(p);
       setTimeout(() => setJustSaved(null), 2000);
     }
@@ -153,6 +172,10 @@ export default function ApiKeyManager({ open, onClose }: Props) {
                     {isSaved ? '已保存' : '保存'}
                   </button>
                 </div>
+
+                {saveErrors[id] && (
+                  <div className="text-[11px] text-red-400 mb-2">{saveErrors[id]}</div>
+                )}
 
                 {/* Advanced: Base URL */}
                 <button

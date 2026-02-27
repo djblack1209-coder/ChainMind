@@ -93,15 +93,21 @@ export default function QuickSetup({ onComplete }: { onComplete?: () => void }) 
     const provider = selectedProvider;
 
     setProgress('正在保存配置...');
+    setErrorMsg('');
 
-    // Save API key for the detected provider
-    await saveKey(provider, key);
-    await setStoreBaseUrl(provider, url);
+    try {
+      // Save API key for the detected provider
+      await saveKey(provider, key);
+      await setStoreBaseUrl(provider, url);
 
-    // Create a new conversation with the selected model
-    createConversation(provider, selectedModel);
+      // Create a new conversation with the selected model
+      createConversation(provider, selectedModel);
 
-    onComplete?.();
+      onComplete?.();
+    } catch (err) {
+      setErrorMsg(`保存配置失败: ${String(err).slice(0, 120)}`);
+      setStage('error');
+    }
   }, [baseUrl, apiKey, selectedModel, selectedProvider, saveKey, setStoreBaseUrl, createConversation, onComplete]);
 
   const handleManualConfirm = useCallback(async () => {
@@ -112,11 +118,16 @@ export default function QuickSetup({ onComplete }: { onComplete?: () => void }) 
     const provider = detectProvider(selectedModel);
     setSelectedProvider(provider);
 
-    await saveKey(provider, key);
-    await setStoreBaseUrl(provider, url);
-    createConversation(provider, selectedModel.trim());
+    try {
+      await saveKey(provider, key);
+      await setStoreBaseUrl(provider, url);
+      createConversation(provider, selectedModel.trim());
 
-    onComplete?.();
+      onComplete?.();
+    } catch (err) {
+      setErrorMsg(`保存配置失败: ${String(err).slice(0, 120)}`);
+      setStage('error');
+    }
   }, [baseUrl, apiKey, selectedModel, saveKey, setStoreBaseUrl, createConversation, onComplete]);
 
   return (
@@ -242,7 +253,7 @@ export default function QuickSetup({ onComplete }: { onComplete?: () => void }) 
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h3 className="text-sm font-semibold text-[var(--text-primary)]">模型列表获取失败</h3>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">配置失败</h3>
             <p className="text-xs text-[var(--text-tertiary)] mt-1">{errorMsg}</p>
           </div>
 
