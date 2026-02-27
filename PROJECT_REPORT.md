@@ -67,6 +67,7 @@ ChainMind 是一个基于 Electron + Next.js 14 + React 18 的桌面 AI 协作�
 - **渲染进程崩溃限流**：`electron/window-manager.js` 新增 crash window 计数器和自动重载上限，避免崩溃-重载死循环。
 - **类型安全收敛**：`stores/auth-store.ts` 与 `app/api/exec/route.ts` 清理关键路径 `catch any`，改为 `unknown` + type narrowing。
 - **测试补强**：新增 `tests/mcp-client.test.js`、`tests/plugin-manager.test.js`，并扩展 `tests/db-service.test.js` 验证 `busy_timeout` 生效。
+- **Native ABI 修复**：`package.json` 脚本改为显式双向重建 `better-sqlite3`（`rebuild:node-native` / `rebuild:electron-native`），替代原先二进制拷贝恢复策略，修复 Electron 启动时 `NODE_MODULE_VERSION` 不匹配风险。
 
 ### ✅ 验证结果
 - `npx vitest --run`：12/12 文件通过，107/107 测试通过。
