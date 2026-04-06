@@ -58,6 +58,7 @@ export async function encrypt(
     enc.encode(plaintext)
   );
   return {
+    data: toBase64(cipherbuf),
     ciphertext: toBase64(cipherbuf),
     iv: toBase64(iv.buffer as ArrayBuffer),
     salt: toBase64(salt.buffer as ArrayBuffer),
@@ -70,7 +71,7 @@ export async function decrypt(
 ): Promise<string> {
   const salt = new Uint8Array(fromBase64(payload.salt));
   const iv = new Uint8Array(fromBase64(payload.iv));
-  const cipherbuf = fromBase64(payload.ciphertext);
+  const cipherbuf = fromBase64(payload.ciphertext ?? payload.data);
   const key = await deriveKey(password, salt);
   const plainbuf = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv: iv.buffer as ArrayBuffer },

@@ -8,6 +8,34 @@ import { existsSync, realpathSync } from 'fs';
 import { homedir } from 'os';
 import { isAuthorizedExecRequest } from '@/lib/internal-route-auth';
 
+const MAX_FILES_BODY_BYTES = 12 * 1024 * 1024;
+const MAX_WRITE_BYTES = 10 * 1024 * 1024;
+const DEFAULT_LIST_PATH = resolve(homedir(), 'Desktop/AI Chain Discussion');
+
+type FileAction = 'read' | 'write' | 'list' | 'stat';
+
+const ALLOWED_ACTIONS: ReadonlySet<FileAction> = new Set(['read', 'write', 'list', 'stat']);
+const ALLOWED_ENCODINGS = new Set([
+  'utf8',
+  'utf-8',
+  'ascii',
+  'base64',
+  'hex',
+  'latin1',
+  'binary',
+  'ucs2',
+  'ucs-2',
+  'utf16le',
+  'utf-16le',
+]);
+
+interface ParsedBody {
+  action: FileAction;
+  filePath?: string;
+  content?: string;
+  encoding: BufferEncoding;
+}
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'string') {
     const trimmed = error.trim();
@@ -106,17 +134,73 @@ function isFileSensitive(p: string): boolean {
   return BLOCKED_FILES.some((pattern) => pattern.test(resolved));
 }
 
+function normalizeEncoding(rawEncoding: unknown): BufferEncoding | null {
+  if (rawEncoding === undefined || rawEncoding === null) return 'utf8';
+  if (typeof rawEncoding !== 'string') return null;
+  const normalized = rawEncoding.trim().toLowerCase();
+  if (!normalized) return 'utf8';
+  if (!ALLOWED_ENCODINGS.has(normalized)) return null;
+  return normalized === 'utf-8' ? 'utf8' : normalized as BufferEncoding;
+}
+
+async function parseBody(req: NextRequest): Promise<{ ok: true; data: ParsedBody } | { ok: false; status: number; error: string }> {
+  const raw = await req.text();
+  if (Buffer.byteLength(raw, 'utf8') > MAX_FILES_BODY_BYTES) {
+    return { ok: false, status: 413, error: '请求体过大' };
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    return { ok: false, status: 400, error: '无效 JSON' };
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { ok: false, status: 400, error: '无效请求体' };
+  }
+
+  const input = body as Record<string, unknown>;
+  if (typeof input.action !== 'string' || !ALLOWED_ACTIONS.has(input.action as FileAction)) {
+    return { ok: false, status: 400, error: '未知操作' };
+  }
+
+  if (input.path !== undefined && typeof input.path !== 'string') {
+    return { ok: false, status: 400, error: 'path 必须是字符串' };
+  }
+
+  const encoding = normalizeEncoding(input.encoding);
+  if (!encoding) {
+    return { ok: false, status: 400, error: '不支持的 encoding' };
+  }
+
+  if (input.action === 'write' && typeof input.content !== 'string') {
+    return { ok: false, status: 400, error: 'write 操作需要字符串 content' };
+  }
+
+  return {
+    ok: true,
+    data: {
+      action: input.action as FileAction,
+      filePath: input.path as string | undefined,
+      content: input.content as string | undefined,
+      encoding,
+    },
+  };
+}
+
 export async function POST(req: NextRequest) {
   if (!isAuthorizedExecRequest(req)) {
     return NextResponse.json({ error: '未授权访问' }, { status: 401 });
   }
 
   try {
-    const { action, path: filePath, content, encoding = 'utf-8' } = await req.json();
-
-    if (!action) {
-      return NextResponse.json({ error: '缺少 action 参数' }, { status: 400 });
+    const parsed = await parseBody(req);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: parsed.status });
     }
+
+    const { action, filePath, content, encoding } = parsed.data;
 
     if (filePath && !isPathAllowed(filePath)) {
       return NextResponse.json({ error: '不允许访问此路径' }, { status: 403 });
@@ -154,21 +238,22 @@ export async function POST(req: NextRequest) {
         if (isFileSensitive(filePath)) {
           return NextResponse.json({ error: '不允许写入敏感文件' }, { status: 403 });
         }
-        if (typeof content === 'string' && content.length > 10 * 1024 * 1024) {
+        const bytesToWrite = Buffer.byteLength(content, encoding);
+        if (bytesToWrite > MAX_WRITE_BYTES) {
           return NextResponse.json({ error: '内容过大（最大10MB）' }, { status: 400 });
         }
         try {
           const dir = dirname(filePath);
           if (!existsSync(dir)) await mkdir(dir, { recursive: true });
-          await writeFile(filePath, content, encoding as BufferEncoding);
-          return NextResponse.json({ ok: true, bytesWritten: Buffer.byteLength(content) });
+          await writeFile(filePath, content, encoding);
+          return NextResponse.json({ ok: true, bytesWritten: bytesToWrite });
         } catch (e) {
           return NextResponse.json({ ok: false, error: getErrorMessage(e, '写入文件失败') }, { status: 500 });
         }
       }
 
       case 'list': {
-        const dirPath = filePath || resolve(homedir(), 'Desktop/AI Chain Discussion');
+        const dirPath = filePath || DEFAULT_LIST_PATH;
         if (!isPathAllowed(dirPath)) {
           return NextResponse.json({ error: '不允许访问此路径' }, { status: 403 });
         }

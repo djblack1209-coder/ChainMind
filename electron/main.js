@@ -19,12 +19,20 @@ const localAuth = require('./local-auth');
 const operationLogger = require('./operation-logger');
 const configManager = require('./config-manager');
 const storageManager = require('./storage-manager');
+const { registerFileIndexerIpc, stopWatching: stopFileIndexer } = require('./file-indexer');
+const { initAutoUpdater } = require('./auto-updater');
+const { initWebDAVBackup } = require('./webdav-backup');
 
 const isDev = !app.isPackaged;
 const HOST = '127.0.0.1';
 const parsedPort = Number.parseInt(process.env.CHAINMIND_PORT || '3456', 10);
 const PORT = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3456;
 const APP_URL = `http://${HOST}:${PORT}`;
+
+const forceSoftwareRendering = process.env.CHAINMIND_SOFTWARE_RENDERING !== '0';
+if (forceSoftwareRendering) {
+  app.disableHardwareAcceleration();
+}
 
 if (!process.env.CHAINMIND_EXEC_TOKEN) {
   process.env.CHAINMIND_EXEC_TOKEN = crypto.randomBytes(32).toString('hex');
@@ -134,6 +142,8 @@ async function initGVAModules() {
   await localAuth.init(userDataPath);
   operationLogger.init(userDataPath);
   storageManager.init(userDataPath);
+  registerFileIndexerIpc();
+  initWebDAVBackup(userDataPath);
   getDb();
   console.log('[GVA] Database initialized');
   console.log('[GVA] All core modules initialized');
@@ -146,6 +156,7 @@ app.whenReady().then(async () => {
     await serverManager.startNextServer();
     console.log(`Next.js ready on ${APP_URL}`);
     windowManager.createMainWindow();
+    initAutoUpdater({ isDev });
   } catch (err) {
     console.error('Failed to start:', err);
     if (!isQuitting && BrowserWindow.getAllWindows().length === 0 && Notification.isSupported()) {
@@ -162,6 +173,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   isQuitting = true;
   llmProxy.shutdown();
+  stopFileIndexer();
   pluginManager.shutdown().catch(() => {});
   serverManager.killNextServer();
   try {

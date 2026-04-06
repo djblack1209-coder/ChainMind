@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import type { AIProvider, ChatMessage, Conversation } from '@/lib/types';
 import { storageGet, storageSet } from '@/lib/storage';
+import { debounce } from 'lodash-es';
 
 const STORAGE_KEY = 'chat-conversations';
 
@@ -19,12 +20,24 @@ interface ChatState {
   updateMessage: (convId: string, msgId: string, partial: Partial<ChatMessage>) => void;
   clearMessages: (convId: string) => void;
   setSystemPrompt: (convId: string, prompt: string | undefined) => void;
+  addTag: (convId: string, tag: string) => void;
+  removeTag: (convId: string, tag: string) => void;
+  getAllTags: () => string[];
+  togglePin: (convId: string) => void;
+  toggleArchive: (convId: string) => void;
+  setFolder: (convId: string, folder: string | undefined) => void;
+  getAllFolders: () => string[];
   saveConversations: () => Promise<void>;
 }
 
 function genId() {
   return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
+
+// Debounced persistence — prevents hundreds of writes during streaming
+const debouncedSave = debounce(async (conversations: Conversation[]) => {
+  await storageSet(STORAGE_KEY, conversations);
+}, 500, { maxWait: 2000 });
 
 export const useChatStore = create<ChatState>()((set, get) => ({
   conversations: [],
@@ -59,7 +72,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       conversations: [conv, ...s.conversations],
       activeConversationId: id,
     }));
-    get().saveConversations().catch(() => {});
+    get().saveConversations();
     return id;
   },
 
@@ -89,7 +102,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           : c
       ),
     }));
-    get().saveConversations().catch(() => {});
+    get().saveConversations();
   },
 
   updateMessage: (convId, msgId, partial) => {
@@ -106,7 +119,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
           : c
       ),
     }));
-    get().saveConversations().catch(() => {});
+    get().saveConversations();
   },
 
   clearMessages: (convId) => {
@@ -115,7 +128,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         c.id === convId ? { ...c, messages: [], title: '新对话', updatedAt: Date.now() } : c
       ),
     }));
-    get().saveConversations().catch(() => {});
+    get().saveConversations();
   },
 
   setSystemPrompt: (convId, prompt) => {
@@ -124,10 +137,75 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         c.id === convId ? { ...c, systemPrompt: prompt, updatedAt: Date.now() } : c
       ),
     }));
-    get().saveConversations().catch(() => {});
+    get().saveConversations();
+  },
+
+  addTag: (convId, tag) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) => {
+        if (c.id !== convId) return c;
+        const tags = c.tags || [];
+        if (tags.includes(tag)) return c;
+        return { ...c, tags: [...tags, tag], updatedAt: Date.now() };
+      }),
+    }));
+    get().saveConversations();
+  },
+
+  removeTag: (convId, tag) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) => {
+        if (c.id !== convId) return c;
+        return { ...c, tags: (c.tags || []).filter((t) => t !== tag), updatedAt: Date.now() };
+      }),
+    }));
+    get().saveConversations();
+  },
+
+  getAllTags: () => {
+    const allTags = new Set<string>();
+    for (const c of get().conversations) {
+      for (const t of c.tags || []) allTags.add(t);
+    }
+    return Array.from(allTags).sort();
+  },
+
+  togglePin: (convId) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) =>
+        c.id === convId ? { ...c, pinned: !c.pinned } : c
+      ),
+    }));
+    get().saveConversations();
+  },
+
+  toggleArchive: (convId) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) =>
+        c.id === convId ? { ...c, archived: !c.archived } : c
+      ),
+    }));
+    get().saveConversations();
+  },
+
+  setFolder: (convId, folder) => {
+    set((s) => ({
+      conversations: s.conversations.map((c) =>
+        c.id === convId ? { ...c, folder } : c
+      ),
+    }));
+    get().saveConversations();
+  },
+
+  getAllFolders: () => {
+    const folders = new Set<string>();
+    for (const c of get().conversations) {
+      if (c.folder) folders.add(c.folder);
+    }
+    return Array.from(folders).sort();
   },
 
   saveConversations: async () => {
-    await storageSet(STORAGE_KEY, get().conversations);
+    debouncedSave(get().conversations);
   },
 }));

@@ -1,0 +1,26 @@
+{
+  "name": "ChainMind",
+  "short_name": "ChainMind",
+  "description": "AI Chain IDE — 多模型协作、链式推理、团队工作流",
+  "start_url": "/workspace",
+  "display": "standalone",
+  "background_color": "#0a0a14",
+  "theme_color": "#ff6b57",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

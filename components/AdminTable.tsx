@@ -1,8 +1,5 @@
 "use client";
 
-// Reusable admin data table with pagination, search, and actions
-// Used across all admin CRUD pages
-
 import React, { useState } from "react";
 
 interface Column<T = any> {
@@ -45,6 +42,7 @@ export default function AdminTable<T extends Record<string, any>>({
 }: AdminTableProps<T>) {
   const [keyword, setKeyword] = useState("");
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const showToolbar = Boolean(onSearch || actions);
 
   const handleSearch = () => {
     onSearch?.(keyword);
@@ -52,41 +50,40 @@ export default function AdminTable<T extends Record<string, any>>({
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          {onSearch && (
-            <>
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder={searchPlaceholder}
-                className="px-3 py-1.5 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-secondary)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-indigo-500 w-56"
-              />
-              <button
-                onClick={handleSearch}
-                className="px-3 py-1.5 rounded-lg bg-indigo-500/15 text-indigo-400 text-sm hover:bg-indigo-500/25 transition-colors"
-              >
-                搜索
-              </button>
-            </>
-          )}
+      {showToolbar && (
+        <div className="panel-shell rounded-[28px] p-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2">
+              {onSearch && (
+                <>
+                  <input
+                    type="text"
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    placeholder={searchPlaceholder}
+                    className="input w-64 text-sm"
+                  />
+                  <button onClick={handleSearch} className="btn btn-secondary px-4 py-2 text-sm">
+                    搜索
+                  </button>
+                </>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">{actions}</div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">{actions}</div>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="rounded-xl border border-[var(--border-secondary)] overflow-hidden">
+      <div className="overflow-hidden rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(15,20,30,0.96),rgba(8,11,18,0.98))] shadow-[var(--shadow-sm)]">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
-              <tr className="bg-[var(--bg-secondary)]">
+              <tr className="border-b border-white/8 bg-white/[0.03]">
                 {columns.map((col) => (
                   <th
                     key={col.key}
-                    className="px-4 py-3 text-left text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider"
+                    className="px-5 py-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)]"
                     style={col.width ? { width: col.width } : undefined}
                   >
                     {col.label}
@@ -94,33 +91,28 @@ export default function AdminTable<T extends Record<string, any>>({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-secondary)]">
+            <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-4 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-[var(--text-tertiary)]">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <td colSpan={columns.length} className="px-5 py-14 text-center">
+                    <div className="inline-flex items-center gap-3 rounded-full border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-[var(--text-tertiary)]">
+                      <div className="h-4 w-4 rounded-full border-2 border-[var(--brand-primary)] border-t-transparent animate-spin" />
                       加载中...
                     </div>
                   </td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-4 py-12 text-center text-[var(--text-tertiary)]">
+                  <td colSpan={columns.length} className="px-5 py-14 text-center text-sm text-[var(--text-tertiary)]">
                     {emptyText}
                   </td>
                 </tr>
               ) : (
                 data.map((row, idx) => (
-                  <tr
-                    key={row[rowKey] ?? idx}
-                    className="bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] transition-colors"
-                  >
+                  <tr key={row[rowKey] ?? idx} className="border-b border-white/6 transition hover:bg-white/[0.03] last:border-b-0">
                     {columns.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-[var(--text-secondary)]">
-                        {col.render
-                          ? col.render(row[col.key], row, idx)
-                          : (row[col.key] ?? "-")}
+                      <td key={col.key} className="px-5 py-4 text-[var(--text-secondary)] align-middle">
+                        {col.render ? col.render(row[col.key], row, idx) : (row[col.key] ?? "-")}
                       </td>
                     ))}
                   </tr>
@@ -131,16 +123,15 @@ export default function AdminTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)]">
+      <div className="panel-shell flex flex-col gap-3 rounded-[24px] px-4 py-4 text-xs text-[var(--text-tertiary)] sm:flex-row sm:items-center sm:justify-between">
         <span>
           共 {total} 条，第 {page}/{totalPages} 页
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             disabled={page <= 1}
             onClick={() => onPageChange(page - 1)}
-            className="px-2.5 py-1 rounded-md bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="btn btn-secondary px-3 py-2 text-xs disabled:opacity-30"
           >
             上一页
           </button>
@@ -159,10 +150,10 @@ export default function AdminTable<T extends Record<string, any>>({
               <button
                 key={p}
                 onClick={() => onPageChange(p)}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
+                className={`rounded-2xl px-3 py-2 text-xs transition ${
                   p === page
-                    ? "bg-indigo-500/20 text-indigo-400"
-                    : "bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]"
+                    ? "border border-[var(--border-primary)] bg-[var(--brand-primary-soft)] text-[#ffc4b1]"
+                    : "border border-white/8 bg-white/[0.03] text-[var(--text-secondary)] hover:bg-white/[0.06]"
                 }`}
               >
                 {p}
@@ -172,7 +163,7 @@ export default function AdminTable<T extends Record<string, any>>({
           <button
             disabled={page >= totalPages}
             onClick={() => onPageChange(page + 1)}
-            className="px-2.5 py-1 rounded-md bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="btn btn-secondary px-3 py-2 text-xs disabled:opacity-30"
           >
             下一页
           </button>
@@ -182,7 +173,6 @@ export default function AdminTable<T extends Record<string, any>>({
   );
 }
 
-// Reusable action buttons
 export function ActionButton({
   onClick,
   variant = "default",
@@ -195,23 +185,23 @@ export function ActionButton({
   disabled?: boolean;
 }) {
   const styles = {
-    default: "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]",
-    primary: "text-indigo-400 hover:bg-indigo-500/15",
-    danger: "text-red-400 hover:bg-red-500/10",
-    success: "text-emerald-400 hover:bg-emerald-500/10",
+    default: "btn-secondary text-[var(--text-secondary)]",
+    primary: "border border-[var(--border-primary)] bg-[var(--brand-primary-soft)] text-[#ffc4b1] hover:bg-[rgba(255,115,77,0.14)]",
+    danger: "border border-[rgba(251,113,133,0.2)] bg-[rgba(251,113,133,0.08)] text-[#ffbeca] hover:bg-[rgba(251,113,133,0.12)]",
+    success: "border border-[rgba(74,222,128,0.18)] bg-[rgba(74,222,128,0.08)] text-emerald-200 hover:bg-[rgba(74,222,128,0.12)]",
   };
+
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`px-2 py-1 rounded-md text-xs transition-colors disabled:opacity-40 ${styles[variant]}`}
+      className={`rounded-2xl px-3 py-2 text-xs font-medium transition disabled:opacity-40 ${styles[variant]}`}
     >
       {children}
     </button>
   );
 }
 
-// Reusable modal dialog
 export function AdminModal({
   open,
   onClose,
@@ -226,28 +216,28 @@ export function AdminModal({
   width?: string;
 }) {
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className={`relative ${width} w-full mx-4 bg-[var(--bg-secondary)] border border-[var(--border-secondary)] rounded-2xl shadow-2xl`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-secondary)]">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
+      <div className={`relative ${width} mx-4 w-full overflow-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(15,20,30,0.96),rgba(8,11,18,0.98))] shadow-[var(--shadow-lg)]`}>
+        <div className="flex items-center justify-between border-b border-white/8 px-6 py-5">
+          <div>
+            <div className="section-kicker">Modal</div>
+            <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">{title}</h3>
+          </div>
+          <button onClick={onClose} className="btn btn-ghost btn-icon border border-white/8 bg-white/[0.03]">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-5">{children}</div>
       </div>
     </div>
   );
 }
 
-// Form field wrapper
 export function FormField({
   label,
   required,
@@ -258,17 +248,16 @@ export function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-4">
-      <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+    <div className="mb-5">
+      <label className="meta-label mb-2 block">
         {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+        {required && <span className="ml-1 text-rose-300">*</span>}
       </label>
       {children}
     </div>
   );
 }
 
-// Standard text input
 export function FormInput({
   value,
   onChange,
@@ -289,12 +278,11 @@ export function FormInput({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-secondary)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+      className="input disabled:opacity-50"
     />
   );
 }
 
-// Standard select
 export function FormSelect({
   value,
   onChange,
@@ -307,11 +295,7 @@ export function FormSelect({
   placeholder?: string;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-secondary)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-indigo-500"
-    >
+    <select value={value} onChange={(e) => onChange(e.target.value)} className="input">
       {placeholder && <option value="">{placeholder}</option>}
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -322,7 +306,6 @@ export function FormSelect({
   );
 }
 
-// Status badge
 export function StatusBadge({
   active,
   activeText = "启用",
@@ -333,14 +316,12 @@ export function StatusBadge({
   inactiveText?: string;
 }) {
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-        active
-          ? "bg-emerald-500/15 text-emerald-400"
-          : "bg-red-500/10 text-red-400"
-      }`}
-    >
-      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${active ? "bg-emerald-400" : "bg-red-400"}`} />
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+      active
+        ? "border border-[rgba(74,222,128,0.18)] bg-[rgba(74,222,128,0.08)] text-emerald-200"
+        : "border border-[rgba(251,113,133,0.2)] bg-[rgba(251,113,133,0.08)] text-[#ffbeca]"
+    }`}>
+      <span className={`mr-2 h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-300" : "bg-rose-300"}`} />
       {active ? activeText : inactiveText}
     </span>
   );

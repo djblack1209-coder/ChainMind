@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { POST as execPost } from '../app/api/exec/route';
 import { POST as chatPost } from '../app/api/chat/route';
+import { POST as filesPost } from '../app/api/files/route';
 import { POST as probePost } from '../app/api/probe-models/route';
 
 const ORIGINAL_ENV = { ...process.env };
@@ -58,6 +59,24 @@ describe('api route security guards', () => {
     expect(res.status).toBe(413);
   });
 
+  it('files route rejects oversized request body', async () => {
+    const req = makeReq('x'.repeat(13 * 1024 * 1024));
+    const res = await filesPost(req);
+    expect(res.status).toBe(413);
+  });
+
+  it('files route rejects non-string path input', async () => {
+    const req = makeReq(JSON.stringify({ action: 'read', path: { bad: true } }));
+    const res = await filesPost(req);
+    expect(res.status).toBe(400);
+  });
+
+  it('files route rejects non-string write content', async () => {
+    const req = makeReq(JSON.stringify({ action: 'write', path: '/tmp/a.txt', content: { x: 1 } }));
+    const res = await filesPost(req);
+    expect(res.status).toBe(400);
+  });
+
   it('chat route rejects oversized body before any upstream fetch', async () => {
     const payload = {
       provider: 'openai',
@@ -65,7 +84,7 @@ describe('api route security guards', () => {
       apiKey: 'sk-test',
       baseUrl: 'https://api.openai.com',
       systemPrompt: 'You are a helpful assistant.',
-      userPrompt: 'x'.repeat(300 * 1024),
+      userPrompt: 'x'.repeat(21 * 1024 * 1024),
       temperature: 0.7,
       maxTokens: 1024,
       effort: 'medium',

@@ -36,6 +36,7 @@ yarn-error.log*
 .chainmind.pid
 *.pid
 tsconfig.tsbuildinfo
+.worktrees/
 
 # Storage (user data)
 storage/

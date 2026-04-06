@@ -7,6 +7,7 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
   let crashLoopDialogShown = false;
   const RENDERER_CRASH_WINDOW_MS = 60 * 1000;
   const MAX_AUTO_RELOADS = 3;
+  const WINDOW_REVEAL_FALLBACK_MS = 2200;
 
   function recordRendererCrash() {
     const now = Date.now();
@@ -41,9 +42,16 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
       show: false,
     });
 
-    mainWindow.loadURL(`${appUrl}/login`);
+    const revealTimer = setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        mainWindow.show();
+      }
+    }, WINDOW_REVEAL_FALLBACK_MS);
+
+    mainWindow.loadURL(appUrl);
 
     mainWindow.once('ready-to-show', () => {
+      clearTimeout(revealTimer);
       mainWindow.show();
       mainWindow.focus();
     });
@@ -68,7 +76,7 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
               if (!mainWindow || mainWindow.isDestroyed()) return;
               if (response === 0) {
                 resetCrashWindow();
-                mainWindow.loadURL(`${appUrl}/login`);
+                mainWindow.loadURL(appUrl);
               } else {
                 mainWindow.close();
               }
@@ -79,7 +87,7 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
 
         setTimeout(() => {
           if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.loadURL(`${appUrl}/login`);
+            mainWindow.loadURL(appUrl);
           }
         }, 1000);
       }
@@ -108,6 +116,7 @@ function createWindowManager({ isDev, appUrl, isQuitting }) {
     });
 
     mainWindow.on('closed', () => {
+      clearTimeout(revealTimer);
       resetCrashWindow();
       mainWindow = null;
     });

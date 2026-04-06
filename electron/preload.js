@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDataPath: () => ipcRenderer.invoke('app:getDataPath'),
   getExecToken: () => ipcRenderer.invoke('app:getExecToken'),
   getKeyEncryptionSecret: () => ipcRenderer.invoke('security:getKeyEncryptionSecret'),
+  importOpenCodeSetup: () => ipcRenderer.invoke('setup:importOpenCode'),
 
   // LLM proxy (main-process network calls)
   llmChatStart: (payload) => ipcRenderer.invoke('llm:chatStart', payload),
@@ -62,6 +63,62 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listLocalFiles: (subDir) => ipcRenderer.invoke('storage:listLocal', subDir),
   deleteLocalFile: (fileName) => ipcRenderer.invoke('storage:deleteLocal', fileName),
   uploadToCloud: (params) => ipcRenderer.invoke('storage:upload', params),
+
+  // WebDAV backup
+  webdav: {
+    configure: (config) => ipcRenderer.invoke('webdav:configure', config),
+    getConfig: () => ipcRenderer.invoke('webdav:get-config'),
+    test: () => ipcRenderer.invoke('webdav:test'),
+    backup: () => ipcRenderer.invoke('webdav:backup'),
+    listBackups: () => ipcRenderer.invoke('webdav:list-backups'),
+    restore: (filename) => ipcRenderer.invoke('webdav:restore', filename),
+    deleteBackup: (filename) => ipcRenderer.invoke('webdav:delete-backup', filename),
+  },
+
+  // File indexer
+  fileIndexStart: (dirPath) => ipcRenderer.invoke('file-index:start', dirPath),
+  fileIndexStop: () => ipcRenderer.invoke('file-index:stop'),
+  fileIndexSearch: (query, limit) => ipcRenderer.invoke('file-index:search', query, limit),
+  fileIndexStatus: () => ipcRenderer.invoke('file-index:status'),
+  fileIndexReindex: () => ipcRenderer.invoke('file-index:reindex'),
+
+  // Auto-updater
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    getVersion: () => ipcRenderer.invoke('updater:get-version'),
+    onChecking: (cb) => {
+      const fn = () => cb();
+      ipcRenderer.on('updater:checking', fn);
+      return () => ipcRenderer.removeListener('updater:checking', fn);
+    },
+    onAvailable: (cb) => {
+      const fn = (_e, data) => cb(data);
+      ipcRenderer.on('updater:available', fn);
+      return () => ipcRenderer.removeListener('updater:available', fn);
+    },
+    onNotAvailable: (cb) => {
+      const fn = (_e, data) => cb(data);
+      ipcRenderer.on('updater:not-available', fn);
+      return () => ipcRenderer.removeListener('updater:not-available', fn);
+    },
+    onProgress: (cb) => {
+      const fn = (_e, data) => cb(data);
+      ipcRenderer.on('updater:progress', fn);
+      return () => ipcRenderer.removeListener('updater:progress', fn);
+    },
+    onDownloaded: (cb) => {
+      const fn = (_e, data) => cb(data);
+      ipcRenderer.on('updater:downloaded', fn);
+      return () => ipcRenderer.removeListener('updater:downloaded', fn);
+    },
+    onError: (cb) => {
+      const fn = (_e, data) => cb(data);
+      ipcRenderer.on('updater:error', fn);
+      return () => ipcRenderer.removeListener('updater:error', fn);
+    },
+  },
 
   // Window controls
   minimize: () => ipcRenderer.invoke('window:minimize'),

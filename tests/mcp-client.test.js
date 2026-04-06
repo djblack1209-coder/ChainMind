@@ -40,6 +40,16 @@ afterEach(() => {
 });
 
 describe('mcp-client robustness', () => {
+  it('validates connect config type', async () => {
+    await expect(mcpClient.connect(null)).rejects.toThrow('Invalid MCP config');
+    await expect(mcpClient.connect({})).rejects.toThrow('Only stdio transport supported currently');
+  });
+
+  it('validates stdio args and env shape', async () => {
+    await expect(mcpClient.connect({ command: 'node', args: 'not-array' })).rejects.toThrow('MCP args must be an array of strings');
+    await expect(mcpClient.connect({ command: 'node', args: [], env: [] })).rejects.toThrow('MCP env must be a key-value object');
+  });
+
   it('rejects all pending requests on disconnect', async () => {
     const reject = vi.fn();
     const timeoutId = setTimeout(() => {}, 60000);

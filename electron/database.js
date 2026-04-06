@@ -32,6 +32,7 @@ function getDb() {
 }
 
 function initSchema() {
+  // ── Kept tables ──────────────────────────────────────────────────────
   db.exec(`
     CREATE TABLE IF NOT EXISTS sys_users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,125 +52,23 @@ function initSchema() {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_authorities (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      authority_id INTEGER UNIQUE NOT NULL,
-      authority_name TEXT NOT NULL,
-      parent_id INTEGER DEFAULT 0,
-      default_router TEXT DEFAULT 'dashboard',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_user_authority (
-      sys_user_id INTEGER NOT NULL,
-      sys_authority_authority_id INTEGER NOT NULL,
-      PRIMARY KEY (sys_user_id, sys_authority_authority_id)
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_base_menus (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      parent_id INTEGER DEFAULT 0,
-      path TEXT NOT NULL,
-      name TEXT NOT NULL,
-      component TEXT DEFAULT '',
-      sort INTEGER DEFAULT 0,
-      hidden INTEGER DEFAULT 0,
-      title TEXT DEFAULT '',
-      icon TEXT DEFAULT '',
-      keep_alive INTEGER DEFAULT 0,
-      close_tab INTEGER DEFAULT 0,
-      default_menu INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_authority_menus (
-      sys_authority_authority_id INTEGER NOT NULL,
-      sys_base_menu_id INTEGER NOT NULL,
-      PRIMARY KEY (sys_authority_authority_id, sys_base_menu_id)
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_apis (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      api_group TEXT DEFAULT '',
-      method TEXT DEFAULT 'POST',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS casbin_rule (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ptype TEXT DEFAULT '',
-      v0 TEXT DEFAULT '',
-      v1 TEXT DEFAULT '',
-      v2 TEXT DEFAULT '',
-      v3 TEXT DEFAULT '',
-      v4 TEXT DEFAULT '',
-      v5 TEXT DEFAULT ''
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_api_tokens (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      token TEXT UNIQUE NOT NULL,
-      name TEXT DEFAULT '',
-      expires_at TEXT,
-      user_id INTEGER,
-      created_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_dictionaries (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      type TEXT UNIQUE NOT NULL,
-      status INTEGER DEFAULT 1,
-      description TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_dictionary_details (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sys_dictionary_id INTEGER NOT NULL,
-      label TEXT NOT NULL,
-      value TEXT NOT NULL,
-      sort INTEGER DEFAULT 0,
-      status INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now')),
-      deleted_at TEXT
-    );
-  `);
-
-  db.exec(`
     CREATE TABLE IF NOT EXISTS sys_params (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT UNIQUE NOT NULL,
       value TEXT DEFAULT '',
       name TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sys_configs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      key TEXT UNIQUE NOT NULL,
+      value TEXT DEFAULT '',
+      group_name TEXT DEFAULT 'system',
       description TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -194,21 +93,6 @@ function initSchema() {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_login_logs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER DEFAULT 0,
-      username TEXT DEFAULT '',
-      ip TEXT DEFAULT '',
-      location TEXT DEFAULT '',
-      os TEXT DEFAULT '',
-      browser TEXT DEFAULT '',
-      status INTEGER DEFAULT 1,
-      message TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  db.exec(`
     CREATE TABLE IF NOT EXISTS sys_error_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       level TEXT DEFAULT 'error',
@@ -220,12 +104,73 @@ function initSchema() {
     );
   `);
 
+  // ── AI feature tables ────────────────────────────────────────────────
   db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_export_templates (
+    CREATE TABLE IF NOT EXISTS memories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT DEFAULT 'default',
+      fact TEXT NOT NULL,
+      category TEXT DEFAULT 'general',
+      importance REAL DEFAULT 0.5,
+      access_count INTEGER DEFAULT 0,
+      last_accessed_at TEXT,
+      source_conversation_id TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      deleted_at TEXT
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS memory_embeddings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      memory_id INTEGER NOT NULL,
+      embedding BLOB,
+      model TEXT DEFAULT 'text-embedding-3-small',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS file_index (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      file_path TEXT NOT NULL,
+      file_hash TEXT NOT NULL,
+      chunk_index INTEGER DEFAULT 0,
+      chunk_text TEXT NOT NULL,
+      token_count INTEGER DEFAULT 0,
+      indexed_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS file_embeddings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      file_index_id INTEGER NOT NULL,
+      embedding BLOB,
+      model TEXT DEFAULT 'text-embedding-3-small',
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (file_index_id) REFERENCES file_index(id) ON DELETE CASCADE
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS agent_configs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
-      template_id TEXT UNIQUE NOT NULL,
-      template_info TEXT DEFAULT '{}',
+      role TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      system_prompt TEXT DEFAULT '',
+      provider TEXT DEFAULT 'claude',
+      model TEXT DEFAULT 'claude-sonnet-4-6',
+      temperature REAL DEFAULT 0.7,
+      max_tokens INTEGER DEFAULT 2048,
+      tools TEXT DEFAULT '[]',
+      color TEXT DEFAULT '#6366f1',
+      icon TEXT DEFAULT 'bot',
+      is_builtin INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
       deleted_at TEXT
@@ -233,14 +178,14 @@ function initSchema() {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS plugin_announcements (
+    CREATE TABLE IF NOT EXISTS workflow_templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      content TEXT DEFAULT '',
-      type TEXT DEFAULT 'notice',
-      level TEXT DEFAULT 'info',
-      status INTEGER DEFAULT 1,
-      user_id INTEGER DEFAULT 0,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      stages TEXT NOT NULL DEFAULT '[]',
+      agent_assignments TEXT DEFAULT '{}',
+      execution_mode TEXT DEFAULT 'sequential',
+      is_builtin INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now')),
       deleted_at TEXT
@@ -248,45 +193,35 @@ function initSchema() {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_versions (
+    CREATE TABLE IF NOT EXISTS prompt_templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      version TEXT NOT NULL,
-      changelog TEXT DEFAULT '',
-      download_url TEXT DEFAULT '',
-      force_update INTEGER DEFAULT 0,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      category TEXT DEFAULT 'general',
+      system_prompt TEXT DEFAULT '',
+      user_prompt_template TEXT DEFAULT '',
+      variables TEXT DEFAULT '[]',
+      tags TEXT DEFAULT '[]',
+      use_count INTEGER DEFAULT 0,
+      is_builtin INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now')),
+      deleted_at TEXT
+    );
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conversation_branches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL,
+      parent_message_id TEXT,
+      branch_point_index INTEGER DEFAULT 0,
+      title TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_plugins (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT UNIQUE NOT NULL,
-      display_name TEXT DEFAULT '',
-      description TEXT DEFAULT '',
-      version TEXT DEFAULT '1.0.0',
-      author TEXT DEFAULT '',
-      enabled INTEGER DEFAULT 1,
-      config TEXT DEFAULT '{}',
-      path TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS sys_configs (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT UNIQUE NOT NULL,
-      value TEXT DEFAULT '',
-      group_name TEXT DEFAULT 'system',
-      description TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
-  `);
-
-  // H-6: Versioned migration system — each migration runs exactly once
+  // ── Versioned migration system ───────────────────────────────────────
   db.exec(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version INTEGER PRIMARY KEY,
@@ -296,12 +231,138 @@ function initSchema() {
   `);
 
   const MIGRATIONS = [
+    // Legacy migrations (kept for existing installs)
     { version: 1, description: 'Add changelog/download_url/force_update to sys_versions', sql: 'ALTER TABLE sys_versions ADD COLUMN changelog TEXT DEFAULT ""' },
     { version: 2, description: 'Add download_url to sys_versions', sql: 'ALTER TABLE sys_versions ADD COLUMN download_url TEXT DEFAULT ""' },
     { version: 3, description: 'Add force_update to sys_versions', sql: 'ALTER TABLE sys_versions ADD COLUMN force_update INTEGER DEFAULT 0' },
     { version: 4, description: 'Add author to sys_plugins', sql: 'ALTER TABLE sys_plugins ADD COLUMN author TEXT DEFAULT ""' },
     { version: 5, description: 'Add deleted_at to sys_params for soft delete', sql: 'ALTER TABLE sys_params ADD COLUMN deleted_at TEXT' },
     { version: 6, description: 'Add deleted_at to sys_configs for soft delete', sql: 'ALTER TABLE sys_configs ADD COLUMN deleted_at TEXT' },
+    // AI feature migrations
+    {
+      version: 7,
+      description: 'Create memories table',
+      sql: `CREATE TABLE IF NOT EXISTS memories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT DEFAULT 'default',
+        fact TEXT NOT NULL,
+        category TEXT DEFAULT 'general',
+        importance REAL DEFAULT 0.5,
+        access_count INTEGER DEFAULT 0,
+        last_accessed_at TEXT,
+        source_conversation_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        deleted_at TEXT
+      )`
+    },
+    {
+      version: 8,
+      description: 'Create memory_embeddings table',
+      sql: `CREATE TABLE IF NOT EXISTS memory_embeddings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_id INTEGER NOT NULL,
+        embedding BLOB,
+        model TEXT DEFAULT 'text-embedding-3-small',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (memory_id) REFERENCES memories(id) ON DELETE CASCADE
+      )`
+    },
+    {
+      version: 9,
+      description: 'Create file_index table',
+      sql: `CREATE TABLE IF NOT EXISTS file_index (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_path TEXT NOT NULL,
+        file_hash TEXT NOT NULL,
+        chunk_index INTEGER DEFAULT 0,
+        chunk_text TEXT NOT NULL,
+        token_count INTEGER DEFAULT 0,
+        indexed_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now'))
+      )`
+    },
+    {
+      version: 10,
+      description: 'Create file_embeddings table',
+      sql: `CREATE TABLE IF NOT EXISTS file_embeddings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_index_id INTEGER NOT NULL,
+        embedding BLOB,
+        model TEXT DEFAULT 'text-embedding-3-small',
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (file_index_id) REFERENCES file_index(id) ON DELETE CASCADE
+      )`
+    },
+    {
+      version: 11,
+      description: 'Create agent_configs table',
+      sql: `CREATE TABLE IF NOT EXISTS agent_configs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        system_prompt TEXT DEFAULT '',
+        provider TEXT DEFAULT 'claude',
+        model TEXT DEFAULT 'claude-sonnet-4-6',
+        temperature REAL DEFAULT 0.7,
+        max_tokens INTEGER DEFAULT 2048,
+        tools TEXT DEFAULT '[]',
+        color TEXT DEFAULT '#6366f1',
+        icon TEXT DEFAULT 'bot',
+        is_builtin INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        deleted_at TEXT
+      )`
+    },
+    {
+      version: 12,
+      description: 'Create workflow_templates table',
+      sql: `CREATE TABLE IF NOT EXISTS workflow_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        stages TEXT NOT NULL DEFAULT '[]',
+        agent_assignments TEXT DEFAULT '{}',
+        execution_mode TEXT DEFAULT 'sequential',
+        is_builtin INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        deleted_at TEXT
+      )`
+    },
+    {
+      version: 13,
+      description: 'Create prompt_templates table',
+      sql: `CREATE TABLE IF NOT EXISTS prompt_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT DEFAULT '',
+        category TEXT DEFAULT 'general',
+        system_prompt TEXT DEFAULT '',
+        user_prompt_template TEXT DEFAULT '',
+        variables TEXT DEFAULT '[]',
+        tags TEXT DEFAULT '[]',
+        use_count INTEGER DEFAULT 0,
+        is_builtin INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now')),
+        updated_at TEXT DEFAULT (datetime('now')),
+        deleted_at TEXT
+      )`
+    },
+    {
+      version: 14,
+      description: 'Create conversation_branches table',
+      sql: `CREATE TABLE IF NOT EXISTS conversation_branches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id TEXT NOT NULL,
+        parent_message_id TEXT,
+        branch_point_index INTEGER DEFAULT 0,
+        title TEXT DEFAULT '',
+        created_at TEXT DEFAULT (datetime('now'))
+      )`
+    },
   ];
 
   const applied = new Set(
@@ -313,8 +374,8 @@ function initSchema() {
     try {
       db.exec(m.sql);
     } catch (e) {
-      // Column may already exist from pre-versioned era — that's OK
-      if (!String(e.message).includes('duplicate column')) {
+      // Column/table may already exist from pre-versioned era — that's OK
+      if (!String(e.message).includes('duplicate column') && !String(e.message).includes('already exists')) {
         console.error(`[DB] Migration v${m.version} failed:`, e.message);
         continue;
       }
@@ -327,60 +388,60 @@ function seedDefaults() {
   const bcrypt = require('bcryptjs');
 
   const tx = db.transaction(() => {
-    // Seed default authorities
-    const authExists = db.prepare('SELECT 1 FROM sys_authorities WHERE authority_id = 1').get();
-    if (!authExists) {
-      db.prepare('INSERT INTO sys_authorities (authority_id, authority_name, parent_id, default_router) VALUES (?, ?, ?, ?)')
-        .run(1, '超级管理员', 0, 'dashboard');
-      db.prepare('INSERT INTO sys_authorities (authority_id, authority_name, parent_id, default_router) VALUES (?, ?, ?, ?)')
-        .run(2, '普通用户', 0, 'dashboard');
-    }
-
     // Seed default admin user
     const userExists = db.prepare('SELECT id FROM sys_users WHERE username = ?').get('admin');
     if (!userExists) {
       const hash = bcrypt.hashSync('admin123', 10);
       const uuid = 'admin-' + Date.now().toString(36);
-      const info = db.prepare('INSERT INTO sys_users (uuid, username, password, nick_name, authority_id, enable) VALUES (?, ?, ?, ?, ?, ?)')
-        .run(uuid, 'admin', hash, '超级管理员', 1, 1);
-      db.prepare('INSERT INTO sys_user_authority (sys_user_id, sys_authority_authority_id) VALUES (?, ?)')
-        .run(info.lastInsertRowid, 1);
+      db.prepare('INSERT INTO sys_users (uuid, username, password, nick_name, authority_id, enable) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(uuid, 'admin', hash, '管理员', 0, 1);
     }
 
-    // Seed default menus
-    const menuExists = db.prepare('SELECT 1 FROM sys_base_menus WHERE name = ?').get('dashboard');
-    if (!menuExists) {
-      const menus = [
-        [0, 'dashboard', 'dashboard', 'dashboard/index', 1, '仪表盘', 'odometer'],
-        [0, 'workspace', 'workspace', 'workspace/index', 2, 'AI 工作台', 'chat-dot-round'],
-        [0, 'admin', 'admin', 'admin/index', 10, '系统管理', 'setting'],
-        [3, 'admin/user', 'user', 'admin/user/index', 1, '用户管理', 'user'],
-        [3, 'admin/role', 'role', 'admin/role/index', 2, '角色管理', 'avatar'],
-        [3, 'admin/menu', 'menu', 'admin/menu/index', 3, '菜单管理', 'menu'],
-        [3, 'admin/api', 'api', 'admin/api/index', 4, 'API 管理', 'platform'],
-        [3, 'admin/dict', 'dict', 'admin/dict/index', 5, '字典管理', 'notebook'],
-        [3, 'admin/params', 'params', 'admin/params/index', 6, '参数管理', 'document'],
-        [3, 'admin/config', 'config', 'admin/config/index', 7, '系统配置', 'tools'],
-        [0, 'logs', 'logs', 'logs/index', 11, '日志管理', 'document-copy'],
-        [11, 'logs/operation', 'operationLog', 'logs/operation/index', 1, '操作日志', 'tickets'],
-        [11, 'logs/login', 'loginLog', 'logs/login/index', 2, '登录日志', 'key'],
-        [11, 'logs/error', 'errorLog', 'logs/error/index', 3, '错误日志', 'warning'],
-        [0, 'tools', 'tools', 'tools/index', 12, '系统工具', 'briefcase'],
-        [15, 'tools/code-gen', 'codeGen', 'tools/code-gen/index', 1, '代码生成器', 'magic-stick'],
-        [15, 'tools/plugin', 'pluginMarket', 'tools/plugin/index', 2, '插件市场', 'goods'],
-        [15, 'tools/export', 'exportTemplate', 'tools/export/index', 3, '导出模板', 'download'],
-        [15, 'tools/form', 'formCreator', 'tools/form/index', 4, '表单创建器', 'edit'],
-        [15, 'tools/version', 'version', 'tools/version/index', 5, '版本管理', 'flag'],
-        [15, 'tools/announcement', 'announcement', 'tools/announcement/index', 6, '公告管理', 'bell'],
-        [15, 'tools/email', 'email', 'tools/email/index', 7, '邮件管理', 'message'],
-        [0, 'profile', 'profile', 'profile/index', 99, '个人中心', 'user-filled'],
+    // Seed builtin agent configs (8 workflow roles from chain-workflow)
+    const agentExists = db.prepare('SELECT 1 FROM agent_configs WHERE is_builtin = 1').get();
+    if (!agentExists) {
+      const agents = [
+        ['需求分析师', 'requirement_analyst', '分析和拆解用户需求，输出结构化需求文档', '你是一位资深需求分析师。分析用户需求，识别核心功能点、约束条件和验收标准，输出结构化需求文档。', 'claude', 'claude-sonnet-4-6', 0.3, 4096, '#3b82f6', 'clipboard-list'],
+        ['系统架构师', 'system_architect', '设计系统架构和技术方案', '你是一位系统架构师。根据需求文档设计技术架构，选择合适的技术栈，定义模块划分和接口规范。', 'claude', 'claude-sonnet-4-6', 0.4, 4096, '#8b5cf6', 'sitemap'],
+        ['高级开发工程师', 'senior_developer', '编写高质量的生产代码', '你是一位高级开发工程师。根据架构设计和需求编写高质量、可维护的代码，遵循最佳实践和设计模式。', 'claude', 'claude-sonnet-4-6', 0.2, 8192, '#10b981', 'code'],
+        ['代码审查员', 'code_reviewer', '审查代码质量，发现潜在问题', '你是一位严格的代码审查员。审查代码的正确性、可读性、性能和安全性，提出具体的改进建议。', 'claude', 'claude-sonnet-4-6', 0.3, 4096, '#f59e0b', 'search'],
+        ['测试工程师', 'test_engineer', '设计测试用例并编写测试代码', '你是一位测试工程师。根据需求和代码设计全面的测试用例，编写单元测试和集成测试，确保代码质量。', 'claude', 'claude-sonnet-4-6', 0.2, 4096, '#ef4444', 'bug'],
+        ['技术文档工程师', 'doc_writer', '编写清晰的技术文档', '你是一位技术文档工程师。编写清晰、准确的API文档、使用指南和架构说明文档。', 'claude', 'claude-sonnet-4-6', 0.5, 4096, '#06b6d4', 'document'],
+        ['DevOps工程师', 'devops_engineer', '处理部署、CI/CD和基础设施', '你是一位DevOps工程师。设计CI/CD流水线，编写部署脚本和配置，确保系统的可靠运行。', 'claude', 'claude-sonnet-4-6', 0.3, 4096, '#84cc16', 'server'],
+        ['项目协调员', 'project_coordinator', '协调各角色工作，管理工作流进度', '你是一位项目协调员。负责协调各个AI角色的工作，跟踪任务进度，确保工作流顺利推进。', 'claude', 'claude-sonnet-4-6', 0.5, 2048, '#ec4899', 'users'],
       ];
-      const stmt = db.prepare('INSERT INTO sys_base_menus (parent_id, path, name, component, sort, title, icon) VALUES (?, ?, ?, ?, ?, ?, ?)');
-      const menuStmt = db.prepare('INSERT INTO sys_authority_menus (sys_authority_authority_id, sys_base_menu_id) VALUES (?, ?)');
-      for (const m of menus) {
-        const info = stmt.run(...m);
-        menuStmt.run(1, info.lastInsertRowid);
+      const stmt = db.prepare(
+        `INSERT INTO agent_configs (name, role, description, system_prompt, provider, model, temperature, max_tokens, color, icon, is_builtin)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+      );
+      for (const a of agents) {
+        stmt.run(...a);
       }
+    }
+
+    // Seed default workflow template
+    const wfExists = db.prepare('SELECT 1 FROM workflow_templates WHERE is_builtin = 1').get();
+    if (!wfExists) {
+      const stages = JSON.stringify([
+        { name: '需求分析', role: 'requirement_analyst', order: 1 },
+        { name: '架构设计', role: 'system_architect', order: 2 },
+        { name: '代码开发', role: 'senior_developer', order: 3 },
+        { name: '代码审查', role: 'code_reviewer', order: 4 },
+        { name: '测试验证', role: 'test_engineer', order: 5 },
+        { name: '文档编写', role: 'doc_writer', order: 6 },
+      ]);
+      const assignments = JSON.stringify({
+        requirement_analyst: 'requirement_analyst',
+        system_architect: 'system_architect',
+        senior_developer: 'senior_developer',
+        code_reviewer: 'code_reviewer',
+        test_engineer: 'test_engineer',
+        doc_writer: 'doc_writer',
+      });
+      db.prepare(
+        `INSERT INTO workflow_templates (name, description, stages, agent_assignments, execution_mode, is_builtin)
+         VALUES (?, ?, ?, ?, ?, 1)`
+      ).run('标准开发流程', '从需求分析到文档编写的完整软件开发工作流', stages, assignments, 'sequential');
     }
   });
 
