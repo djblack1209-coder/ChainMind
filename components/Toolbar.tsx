@@ -128,70 +128,80 @@ export default function Toolbar({ onOpenApiKeys: _onOpenApiKeys, onSave: _onSave
   };
 
   return (
-    <div className="flex flex-col flex-shrink-0">
-      {/* Main toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-secondary)] border-b border-[var(--border-secondary)]">
-        <button onClick={handleAddNode} className="btn btn-secondary text-xs py-1.5 px-3">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-          添加节点
-        </button>
+    <div className="flex flex-col flex-shrink-0 gap-3">
+      <div className="panel-shell rounded-[28px] p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="section-kicker">Flow controls</div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="chip chip-muted">{nodes.length} 节点</span>
+              <span className="chip chip-muted">{edges.length} 连线</span>
+              {isExecuting && <span className="chip chip-cool">Executing</span>}
+            </div>
+          </div>
 
-        <button
-          onClick={handleExecute}
-          disabled={isExecuting || nodes.length === 0}
-          className={`btn text-xs py-1.5 px-4 ${isExecuting ? 'btn-secondary' : 'btn-success'}`}
-        >
-          {isExecuting ? (
-            <>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
-              执行中...
-            </>
-          ) : (
-            <>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-              执行流水线
-            </>
-          )}
-        </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={handleAddNode} className="btn btn-secondary px-4 py-2 text-xs">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+              添加节点
+            </button>
 
-        <div className="w-px h-5 bg-[var(--border-secondary)] mx-1" />
+            <button
+              onClick={handleExecute}
+              disabled={isExecuting || nodes.length === 0}
+              className={`btn ${isExecuting ? 'btn-secondary' : 'btn-success'} px-5 py-2 text-xs`}
+            >
+              {isExecuting ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                  执行中...
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                  执行流水线
+                </>
+              )}
+            </button>
 
-        {/* User input */}
-        <div className="flex-1 flex items-center gap-2">
-          <span className="text-[10px] text-[var(--text-tertiary)] whitespace-nowrap">输入:</span>
+            {executionLog.length > 0 && (
+              <button
+                onClick={() => setShowLog(!showLog)}
+                className={`btn ${showLog ? 'btn-secondary border-[rgba(10,132,255,0.2)] bg-[rgba(10,132,255,0.08)] text-[#d7efff]' : 'btn-secondary'} px-4 py-2 text-xs`}
+                title="执行日志"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
+                执行日志
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[24px] border border-white/10 bg-white/[0.04] p-3">
+          <label className="meta-label mb-2 block">用户输入</label>
           <input
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             placeholder="通过 {{user.input}} 注入到节点..."
-            className="input text-xs py-1.5 flex-1 min-w-0"
+            className="input text-xs"
           />
         </div>
-
-        <div className="w-px h-5 bg-[var(--border-secondary)] mx-1" />
-
-        <div className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-            {nodes.length} 节点
-          </span>
-          <span>&middot;</span>
-          <span>{edges.length} 连线</span>
-        </div>
-
-        {executionLog.length > 0 && (
-          <button onClick={() => setShowLog(!showLog)} className={`btn btn-ghost btn-icon ${showLog ? 'text-indigo-400' : ''}`} title="执行日志">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
-          </button>
-        )}
       </div>
 
-      {/* Execution log */}
       {showLog && executionLog.length > 0 && (
-        <div className="px-3 py-2 bg-[var(--bg-primary)] border-b border-[var(--border-secondary)] max-h-[100px] overflow-y-auto animate-slide-down">
-          {executionLog.map((msg, i) => (
-            <div key={i} className="text-[10px] text-[var(--text-tertiary)] font-mono leading-relaxed">{msg}</div>
-          ))}
+        <div className="panel-shell max-h-[180px] overflow-y-auto rounded-[24px] px-4 py-4 animate-slide-down">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="meta-label">Execution log</div>
+            <span className="chip chip-muted !px-2 !py-1">{executionLog.length} entries</span>
+          </div>
+          <div className="space-y-2 font-mono text-[11px] text-[var(--text-tertiary)]">
+            {executionLog.map((msg, i) => (
+              <div key={i} className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2 leading-6">
+                {msg}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

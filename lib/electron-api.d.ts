@@ -188,6 +188,21 @@ export interface LLMChatChunkPayload {
   chunk: StreamChunk;
 }
 
+export interface ImportedOpenCodeSetup {
+  found: boolean;
+  source: { configPath: string; authPath: string };
+  keys: { claude?: string; openai?: string };
+  baseUrls: { claude?: string; openai?: string };
+  models: { claude?: string; openai?: string };
+  preferred: { provider: string; model: string } | null;
+}
+
+export interface ImportOpenCodeSetupResult {
+  ok: boolean;
+  data?: ImportedOpenCodeSetup;
+  error?: string;
+}
+
 export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>;
@@ -195,6 +210,7 @@ export interface ElectronAPI {
   getDataPath: () => Promise<string>;
   getExecToken: () => Promise<string>;
   getKeyEncryptionSecret: () => Promise<string>;
+  importOpenCodeSetup: () => Promise<ImportOpenCodeSetupResult>;
 
   // LLM proxy (Electron main process)
   llmChatStart: (payload: ChatRequestBody) => Promise<LLMChatStartResult>;
@@ -239,6 +255,13 @@ export interface ElectronAPI {
   listLocalFiles: (subDir?: string) => Promise<{ ok: boolean; data: Array<{ name: string; type: 'dir' | 'file'; path: string; size: number }> }>;
   deleteLocalFile: (fileName: string) => Promise<{ ok: boolean }>;
   uploadToCloud: (params: any) => Promise<{ ok: boolean; url?: string; name?: string; path?: string; size?: number; error?: string }>;
+
+  // File indexer
+  fileIndexStart: (dirPath: string) => Promise<{ ok: boolean; error?: string }>;
+  fileIndexStop: () => Promise<{ ok: boolean }>;
+  fileIndexSearch: (query: string, limit?: number) => Promise<{ ok: boolean; data?: FileSearchResult[]; error?: string }>;
+  fileIndexStatus: () => Promise<{ ok: boolean; data: FileIndexStatus }>;
+  fileIndexReindex: () => Promise<{ ok: boolean; error?: string }>;
 
   // Window controls
   minimize: () => Promise<void>;
@@ -291,6 +314,22 @@ export interface LogEntry {
   action: string;
   detail?: string;
   [key: string]: any;
+}
+
+export interface FileSearchResult {
+  filePath: string;
+  chunk: string;
+  lineStart: number;
+  lineEnd: number;
+  score: number;
+}
+
+export interface FileIndexStatus {
+  watching: boolean;
+  directory: string | null;
+  filesIndexed: number;
+  totalChunks: number;
+  lastIndexedAt: number | null;
 }
 
 declare global {

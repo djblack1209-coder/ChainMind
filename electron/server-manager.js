@@ -66,10 +66,14 @@ function createServerManager({ isDev, host, port, appUrl, isQuitting }) {
 
       if (isDev) {
         const serverDir = path.join(__dirname, '..');
-        nextProcess = spawn('npx', ['next', 'dev', '-H', host, '-p', String(port)], {
+        const nextCliPath = require.resolve('next/dist/bin/next');
+        nextProcess = spawn(process.execPath, [nextCliPath, 'dev', '-H', host, '-p', String(port)], {
           cwd: serverDir,
-          env,
-          shell: true,
+          env: {
+            ...env,
+            ELECTRON_RUN_AS_NODE: '1',
+          },
+          shell: false,
           stdio: ['ignore', 'pipe', 'pipe'],
         });
       } else {

@@ -3,6 +3,7 @@
 // System Config — Grouped key-value config editor
 
 import React, { useState, useEffect, useCallback } from "react";
+import AdminPageIntro from "@/components/AdminPageIntro";
 import { AdminModal, FormField, FormInput, ActionButton } from "@/components/AdminTable";
 import { useToast } from "@/components/Toast";
 import { toastError } from "@/app/admin/_utils/toast-error";
@@ -90,54 +91,57 @@ export default function ConfigPage() {
   };
 
   return (
-    <div className="flex gap-6">
-      {/* Group tabs */}
-      <div className="w-44 flex-shrink-0">
-        <div className="rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-primary)] p-2">
-          <button
-            onClick={() => setActiveGroup("")}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${!activeGroup ? "bg-indigo-500/15 text-indigo-400 font-medium" : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"}`}
-          >
-            全部
-          </button>
-          {groups.map((g) => (
+    <div className="space-y-6">
+      <AdminPageIntro
+        title="系统配置"
+        description="按分组维护系统配置项，支持快速筛选、行内修改和值级别编辑。"
+        chips={["Grouped config", "Inline editing", "Key registry"]}
+        actions={<button onClick={openCreate} className="btn btn-primary px-4 py-2 text-sm">新增配置</button>}
+      />
+
+      <div className="flex gap-6">
+        <div className="w-52 flex-shrink-0">
+          <div className="panel-shell rounded-[28px] p-3">
             <button
-              key={g}
-              onClick={() => setActiveGroup(g)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${activeGroup === g ? "bg-indigo-500/15 text-indigo-400 font-medium" : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"}`}
+              onClick={() => setActiveGroup("")}
+              className={`w-full text-left px-3 py-2 rounded-2xl text-sm transition-colors ${!activeGroup ? "bg-[var(--brand-primary-soft)] text-[#ffc4b1] border border-[var(--border-primary)] font-medium" : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"}`}
             >
-              {g}
+              全部
             </button>
-          ))}
+            {groups.map((g) => (
+              <button
+                key={g}
+                onClick={() => setActiveGroup(g)}
+                className={`mt-2 w-full text-left px-3 py-2 rounded-2xl text-sm transition-colors ${activeGroup === g ? "bg-[var(--brand-primary-soft)] text-[#ffc4b1] border border-[var(--border-primary)] font-medium" : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"}`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Config list */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs text-[var(--text-tertiary)]">共 {data.length} 项配置</span>
-          <button onClick={openCreate} className="px-3 py-1.5 rounded-lg bg-indigo-500 text-white text-sm hover:bg-indigo-600 transition-colors">
-            新增配置
-          </button>
-        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-4">
+            <span className="chip chip-muted">共 {data.length} 项配置</span>
+          </div>
 
-        <div className="rounded-xl border border-[var(--border-secondary)] overflow-hidden">
+        <div className="rounded-[28px] border border-white/8 overflow-hidden bg-[linear-gradient(180deg,rgba(15,20,30,0.96),rgba(8,11,18,0.98))]">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-[var(--text-tertiary)]">
-              <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2" />
+              <div className="w-4 h-4 border-2 border-[var(--brand-primary)] border-t-transparent rounded-full animate-spin mr-2" />
               加载中...
             </div>
           ) : data.length === 0 ? (
             <div className="text-center py-12 text-[var(--text-tertiary)] text-sm">暂无配置</div>
           ) : (
-            <div className="divide-y divide-[var(--border-secondary)]">
+            <div className="divide-y divide-white/6">
               {data.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 px-4 py-3 bg-[var(--bg-primary)] hover:bg-[var(--bg-hover)] transition-colors group">
+                <div key={item.id} className="flex items-center gap-4 px-4 py-3 bg-transparent hover:bg-[var(--bg-hover)] transition-colors group">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-indigo-400">{item.key}</span>
+                      <span className="text-sm font-mono text-[#ffc4b1]">{item.key}</span>
                       {item.group_name && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--bg-tertiary)] text-[var(--text-tertiary)]">{item.group_name}</span>
+                        <span className="chip chip-muted !px-2 !py-1 text-[10px]">{item.group_name}</span>
                       )}
                     </div>
                     {item.description && <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{item.description}</p>}
@@ -145,7 +149,7 @@ export default function ConfigPage() {
                   <input
                     defaultValue={item.value}
                     onBlur={(e) => handleInlineEdit(item, e.target.value)}
-                    className="w-48 px-2 py-1 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-secondary)] text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-indigo-500"
+                    className="input w-48 text-xs font-mono"
                   />
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <ActionButton variant="danger" onClick={() => handleDelete(item.id)}>删除</ActionButton>
@@ -154,6 +158,7 @@ export default function ConfigPage() {
               ))}
             </div>
           )}
+        </div>
         </div>
       </div>
 
@@ -171,8 +176,8 @@ export default function ConfigPage() {
           <FormInput value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="配置描述" />
         </FormField>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">取消</button>
-          <button onClick={handleSave} className="px-4 py-2 rounded-lg text-sm bg-indigo-500 text-white hover:bg-indigo-600">保存</button>
+          <button onClick={() => setModalOpen(false)} className="btn btn-secondary px-4 py-2 text-sm">取消</button>
+          <button onClick={handleSave} className="btn btn-primary px-4 py-2 text-sm">保存</button>
         </div>
       </AdminModal>
     </div>

@@ -15,7 +15,7 @@ import { isTrustedElectronRequest } from '@/lib/internal-route-auth';
 // Electron compatibility: use Node.js runtime instead of Edge
 export const dynamic = 'force-dynamic';
 
-const MAX_CHAT_BODY_BYTES = 256 * 1024;
+const MAX_CHAT_BODY_BYTES = 20 * 1024 * 1024; // 20MB for image uploads
 
 async function parseAndValidateBody(req: NextRequest): Promise<{ ok: true; body: ChatRequestBody } | { ok: false; status: number; message: string }> {
   const raw = await req.text();
@@ -73,9 +73,12 @@ export async function POST(req: NextRequest) {
     model,
     systemPrompt,
     userPrompt: finalUserPrompt,
+    messages: body.messages,
     temperature,
     maxTokens,
     effort,
+    images: body.images,
+    attachments: body.attachments,
   });
 
   const streamFormat = resolveStreamFormat(provider, baseUrl);
@@ -108,7 +111,9 @@ export async function POST(req: NextRequest) {
 
         try {
           await forwardStreamChunks(upstreamBody, streamFormat, (chunk) => {
-            sendChunk(chunk.type, chunk.content);
+            if (chunk.type === 'text' || chunk.type === 'error') {
+              sendChunk(chunk.type, chunk.content);
+            }
           });
           sendChunk('done', '');
         } catch (err) {

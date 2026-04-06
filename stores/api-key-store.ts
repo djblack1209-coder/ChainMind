@@ -2,12 +2,15 @@
 
 import { create } from 'zustand';
 import type { AIProvider, EncryptedPayload } from '@/lib/types';
-import { streamChatRequest } from '@/lib/llm-client';
+import { DEFAULT_BASE_URLS, DEFAULT_PROVIDER_MODEL, groupModelsByProvider } from '@/lib/types';
+import { getOllamaModelNames } from '@/lib/ollama';
+import { probeModelsRequest, streamChatRequest } from '@/lib/llm-client';
 import { encrypt, decrypt } from '@/lib/crypto';
 import { storageGet, storageSet } from '@/lib/storage';
 
 const STORAGE_KEY = 'api-keys-v2';
 const URLS_KEY = 'api-base-urls';
+const DISCOVERED_MODELS_KEY = 'api-discovered-models-v1';
 const SECURE_SECRET_UNAVAILABLE_CODE = 'E_SECURE_SECRET_UNAVAILABLE';
 
 let cachedMasterPassword: string | null = null;
@@ -76,35 +79,48 @@ async function getMasterPassword(): Promise<string> {
 interface ApiKeyState {
   keys: Record<AIProvider, EncryptedPayload | null>;
   baseUrls: Record<AIProvider, string>;
+  discoveredModels: Record<AIProvider, string[]>;
   loaded: boolean;
   loadKeys: () => Promise<void>;
   saveKey: (provider: AIProvider, apiKey: string) => Promise<void>;
   getKey: (provider: AIProvider) => Promise<string | null>;
   removeKey: (provider: AIProvider) => Promise<void>;
   setBaseUrl: (provider: AIProvider, url: string) => Promise<void>;
+  setDiscoveredModels: (provider: AIProvider, models: string[]) => Promise<void>;
+  hydrateDiscoveredModels: (models: string[]) => Promise<void>;
+  probeModels: (provider: AIProvider, opts?: { baseUrl?: string; apiKey?: string }) => Promise<{ ok: boolean; models: string[]; endpoint?: string; error?: string }>;
   testConnection: (provider: AIProvider, testModel?: string) => Promise<{ ok: boolean; latencyMs: number; error?: string }>;
 }
 
 export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
-  keys: { claude: null, openai: null, gemini: null },
+  keys: { claude: null, openai: null, gemini: null, deepseek: null, ollama: null, 'openai-compatible': null },
   baseUrls: {
-    claude: 'https://api.anthropic.com',
-    openai: 'https://api.openai.com',
-    gemini: 'https://generativelanguage.googleapis.com',
+    claude: DEFAULT_BASE_URLS.claude,
+    openai: DEFAULT_BASE_URLS.openai,
+    gemini: DEFAULT_BASE_URLS.gemini,
+    deepseek: DEFAULT_BASE_URLS.deepseek,
+    ollama: DEFAULT_BASE_URLS.ollama,
+    'openai-compatible': DEFAULT_BASE_URLS['openai-compatible'],
   },
+  discoveredModels: { claude: [], openai: [], gemini: [], deepseek: [], ollama: [], 'openai-compatible': [] },
   loaded: false,
 
   loadKeys: async () => {
     try {
       const stored = await storageGet<Record<AIProvider, EncryptedPayload | null>>(STORAGE_KEY);
       const urls = await storageGet<Record<AIProvider, string>>(URLS_KEY);
+      const discovered = await storageGet<Record<AIProvider, string[]>>(DISCOVERED_MODELS_KEY);
       set({
-        keys: stored || { claude: null, openai: null, gemini: null },
+        keys: stored || { claude: null, openai: null, gemini: null, deepseek: null, ollama: null, 'openai-compatible': null },
         baseUrls: urls || {
-          claude: 'https://api.anthropic.com',
-          openai: 'https://api.openai.com',
-          gemini: 'https://generativelanguage.googleapis.com',
+          claude: DEFAULT_BASE_URLS.claude,
+          openai: DEFAULT_BASE_URLS.openai,
+          gemini: DEFAULT_BASE_URLS.gemini,
+          deepseek: DEFAULT_BASE_URLS.deepseek,
+          ollama: DEFAULT_BASE_URLS.ollama,
+          'openai-compatible': DEFAULT_BASE_URLS['openai-compatible'],
         },
+        discoveredModels: discovered || { claude: [], openai: [], gemini: [], deepseek: [], ollama: [], 'openai-compatible': [] },
         loaded: true,
       });
     } catch {
@@ -163,6 +179,62 @@ export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
     await storageSet(URLS_KEY, baseUrls);
   },
 
+  setDiscoveredModels: async (provider, models) => {
+    const next = {
+      ...get().discoveredModels,
+      [provider]: Array.from(new Set(models.filter(Boolean))),
+    };
+    set({ discoveredModels: next });
+    await storageSet(DISCOVERED_MODELS_KEY, next);
+  },
+
+  hydrateDiscoveredModels: async (models) => {
+    const grouped = groupModelsByProvider(models);
+    const next: Record<AIProvider, string[]> = {
+      claude: Array.from(new Set([...(get().discoveredModels.claude || []), ...grouped.claude])),
+      openai: Array.from(new Set([...(get().discoveredModels.openai || []), ...grouped.openai])),
+      gemini: Array.from(new Set([...(get().discoveredModels.gemini || []), ...grouped.gemini])),
+      deepseek: Array.from(new Set([...(get().discoveredModels.deepseek || []), ...grouped.deepseek])),
+      ollama: Array.from(new Set([...(get().discoveredModels.ollama || []), ...grouped.ollama])),
+      'openai-compatible': Array.from(new Set([...(get().discoveredModels['openai-compatible'] || []), ...grouped['openai-compatible']])),
+    };
+    set({ discoveredModels: next });
+    await storageSet(DISCOVERED_MODELS_KEY, next);
+  },
+
+  probeModels: async (provider, opts) => {
+    // Ollama doesn't need an API key — probe directly
+    if (provider === 'ollama') {
+      const baseUrl = opts?.baseUrl || get().baseUrls.ollama;
+      try {
+        const models = await getOllamaModelNames(baseUrl);
+        if (models.length > 0) {
+          await get().setDiscoveredModels('ollama', models);
+          return { ok: true, models, endpoint: baseUrl };
+        }
+        return { ok: false, models: [], error: 'Ollama 未运行或无已安装模型。运行: ollama serve' };
+      } catch (e: any) {
+        return { ok: false, models: [], error: e?.message || 'Ollama probe failed' };
+      }
+    }
+
+    const apiKey = opts?.apiKey || await get().getKey(provider);
+    const baseUrl = opts?.baseUrl || get().baseUrls[provider];
+    if (!apiKey) {
+      return { ok: false, models: [], error: '未配置API密钥' };
+    }
+
+    const result = await probeModelsRequest(baseUrl, apiKey);
+    if (result.models?.length) {
+      const providerModels = result.models.filter((model) => groupModelsByProvider([model])[provider].length > 0);
+      await get().setDiscoveredModels(provider, providerModels.length > 0 ? providerModels : result.models);
+      await get().hydrateDiscoveredModels(result.models);
+      return { ok: true, models: result.models, endpoint: result.endpoint, error: result.error };
+    }
+
+    return { ok: false, models: [], endpoint: result.endpoint, error: result.error || '未发现可用模型' };
+  },
+
   testConnection: async (provider, testModel?: string) => {
     let apiKey: string | null = null;
     try {
@@ -175,7 +247,7 @@ export const useApiKeyStore = create<ApiKeyState>()((set, get) => ({
     const baseUrl = get().baseUrls[provider];
     // Use provided model or sensible defaults
     const model = testModel
-      || (provider === 'claude' ? 'claude-3-haiku' : provider === 'openai' ? 'gpt-4o-mini' : 'gemini-2.0-flash');
+      || (provider === 'claude' ? 'claude-haiku-4-5' : DEFAULT_PROVIDER_MODEL[provider]);
     const start = performance.now();
     try {
       let streamError = '';

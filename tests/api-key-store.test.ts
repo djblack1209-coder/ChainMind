@@ -18,9 +18,11 @@ vi.mock('../lib/crypto', () => ({
 
 vi.mock('../lib/llm-client', () => ({
   streamChatRequest: vi.fn(),
+  probeModelsRequest: vi.fn(),
 }));
 
 const sampleEncrypted: EncryptedPayload = {
+  data: 'cipher',
   ciphertext: 'cipher',
   iv: 'iv',
   salt: 'salt',
@@ -87,11 +89,14 @@ describe('api-key-store secure secret behavior', () => {
 
     const { useApiKeyStore } = await import('../stores/api-key-store');
     useApiKeyStore.setState({
-      keys: { claude: null, openai: sampleEncrypted, gemini: null },
+      keys: { claude: null, openai: sampleEncrypted, gemini: null, deepseek: null, ollama: null, 'openai-compatible': null },
       baseUrls: {
         claude: 'https://api.anthropic.com',
         openai: 'https://api.openai.com',
         gemini: 'https://generativelanguage.googleapis.com',
+        deepseek: 'https://api.deepseek.com/v1',
+        ollama: 'http://localhost:11434/v1',
+        'openai-compatible': 'http://localhost:8080/v1',
       },
       loaded: true,
     });
@@ -100,5 +105,26 @@ describe('api-key-store secure secret behavior', () => {
 
     expect(key).toBeNull();
     expect(decryptMock).not.toHaveBeenCalled();
+  });
+
+  it('persists discovered models grouped by provider', async () => {
+    setWindow(undefined);
+
+    const { useApiKeyStore } = await import('../stores/api-key-store');
+    await useApiKeyStore.getState().hydrateDiscoveredModels([
+      'chatgpt-5.4',
+      'claude-opus-4-6',
+      'gemini-2.0-flash',
+      'qwen-max',
+    ]);
+
+    expect(storageSetMock).toHaveBeenCalledWith(
+      'api-discovered-models-v1',
+      expect.objectContaining({
+        claude: expect.arrayContaining(['claude-opus-4-6']),
+        openai: expect.arrayContaining(['chatgpt-5.4', 'qwen-max']),
+        gemini: expect.arrayContaining(['gemini-2.0-flash']),
+      })
+    );
   });
 });

@@ -3,6 +3,7 @@
 // Personal Profile — View/edit user info + change password
 
 import React, { useState } from "react";
+import AdminPageIntro from "@/components/AdminPageIntro";
 import { useAuthStore } from "@/stores/auth-store";
 import { FormField, FormInput, AdminModal } from "@/components/AdminTable";
 
@@ -88,18 +89,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      {/* Success message */}
+    <div className="space-y-6">
+      <AdminPageIntro
+        title="个人中心"
+        description="查看与维护当前管理员账户资料，并在需要时更新登录密码。"
+        chips={["Profile", "Account security", "Local admin"]}
+      />
+
       {msg && (
         <div className={`mb-4 px-4 py-2 rounded-lg border text-sm ${msg.type === "success" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-400"}`}>
           {msg.text}
         </div>
       )}
 
-      {/* Avatar + basic info */}
-      <div className="rounded-xl border border-[var(--border-secondary)] bg-[var(--bg-primary)] p-6 mb-6">
+      <div className="panel-shell max-w-3xl rounded-[30px] p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,115,77,0.95),rgba(255,190,114,0.85))] text-2xl font-bold text-[var(--text-inverse)] shadow-[0_18px_36px_rgba(255,115,77,0.18)]">
             {(user.nick_name || user.username).charAt(0).toUpperCase()}
           </div>
           <div>
@@ -121,10 +126,10 @@ export default function ProfilePage() {
               <FormInput value={form.email} onChange={(v) => setForm({ ...form, email: v })} placeholder="邮箱" />
             </FormField>
             <div className="flex gap-2 mt-4">
-              <button onClick={handleSaveProfile} disabled={saving} className="px-4 py-2 rounded-lg text-sm bg-indigo-500 text-white hover:bg-indigo-600 disabled:opacity-50 transition-colors">
+              <button onClick={handleSaveProfile} disabled={saving} className="btn btn-primary px-4 py-2 text-sm disabled:opacity-50">
                 {saving ? "保存中..." : "保存"}
               </button>
-              <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors">
+              <button onClick={() => setEditing(false)} className="btn btn-secondary px-4 py-2 text-sm">
                 取消
               </button>
             </div>
@@ -153,13 +158,13 @@ export default function ProfilePage() {
                   setForm({ nick_name: user.nick_name || "", phone: user.phone || "", email: user.email || "" });
                   setEditing(true);
                 }}
-                className="px-4 py-2 rounded-lg text-sm bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 transition-colors"
+                className="btn btn-primary px-4 py-2 text-sm"
               >
                 编辑资料
               </button>
-           <button
-                onClick={() => setPwdOpen(true)}
-                className="px-4 py-2 rounded-lg text-sm bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            <button
+                 onClick={() => setPwdOpen(true)}
+                className="btn btn-secondary px-4 py-2 text-sm"
               >
                 修改密码
               </button>
@@ -185,8 +190,8 @@ export default function ProfilePage() {
           </div>
         )}
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={() => setPwdOpen(false)} className="px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">取消</button>
-          <button onClick={handleChangePassword} className="px-4 py-2 rounded-lg text-sm bg-indigo-500 text-white hover:bg-indigo-600">确定</button>
+          <button onClick={() => setPwdOpen(false)} className="btn btn-secondary px-4 py-2 text-sm">取消</button>
+          <button onClick={handleChangePassword} className="btn btn-primary px-4 py-2 text-sm">确定</button>
         </div>
       </AdminModal>
     </div>

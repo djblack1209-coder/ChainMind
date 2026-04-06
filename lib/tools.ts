@@ -288,3 +288,37 @@ export const CATEGORY_LABELS: Record<string, string> = {
   tool: '内置工具',
   system: '系统命令',
 };
+
+// ===== Colon Commands (NextChat-style quick actions) =====
+// These are fast session-management commands that execute immediately without AI.
+export interface ColonCommand {
+  name: string;        // e.g. ":new"
+  label: string;       // Chinese display name
+  description: string;
+  icon: string;
+  action: string;      // action identifier for handler
+}
+
+export const COLON_COMMANDS: ColonCommand[] = [
+  { name: ':new',   label: '新建对话',   description: '创建一个新的对话',           icon: '➕', action: 'new' },
+  { name: ':clear', label: '清空消息',   description: '清空当前对话的所有消息',     icon: '🗑️', action: 'clear' },
+  { name: ':del',   label: '删除对话',   description: '删除当前对话',               icon: '❌', action: 'del' },
+  { name: ':fork',  label: '复制对话',   description: '复制当前对话为新会话',       icon: '🔀', action: 'fork' },
+  { name: ':next',  label: '下一个对话', description: '切换到下一个对话',           icon: '⏭️', action: 'next' },
+  { name: ':prev',  label: '上一个对话', description: '切换到上一个对话',           icon: '⏮️', action: 'prev' },
+  { name: ':export',label: '导出对话',   description: '将当前对话导出为图片或文本', icon: '📤', action: 'export' },
+  { name: ':search',label: '搜索消息',   description: '在所有对话中搜索消息',       icon: '🔍', action: 'search' },
+];
+
+export function matchColonCommands(input: string): ColonCommand[] {
+  const trimmed = input.trim().toLowerCase();
+  if (!trimmed.startsWith(':')) return [];
+  return COLON_COMMANDS.filter((cmd) =>
+    cmd.name.startsWith(trimmed) || cmd.label.includes(trimmed.slice(1))
+  );
+}
+
+export function parseColonCommand(input: string): ColonCommand | null {
+  const trimmed = input.trim().toLowerCase();
+  return COLON_COMMANDS.find((c) => c.name === trimmed) || null;
+}

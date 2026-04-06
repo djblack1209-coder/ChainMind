@@ -1,0 +1,7 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e4]
+    - generic [ref=e14]: 当前版本
+  - generic [ref=e15]:
+    - img [ref=e17]
+    - generic [ref=e27]: 白色版本（推荐）

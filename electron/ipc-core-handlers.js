@@ -1,4 +1,81 @@
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
+
+function readJsonIfExists(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
+function pickFirstModelKey(models) {
+  if (!models || typeof models !== 'object') return '';
+  const keys = Object.keys(models);
+  return keys.length > 0 ? keys[0] : '';
+}
+
+function importOpenCodeSetup() {
+  const home = os.homedir();
+  const configPath = path.join(home, '.config', 'opencode', 'opencode.json');
+  const authPath = path.join(home, '.local', 'share', 'opencode', 'auth.json');
+
+  const config = readJsonIfExists(configPath);
+  const auth = readJsonIfExists(authPath);
+
+  if (!config && !auth) {
+    return {
+      found: false,
+      source: { configPath, authPath },
+      keys: {},
+      baseUrls: {},
+      models: {},
+      preferred: null,
+    };
+  }
+
+  const providerConfig = config?.provider || {};
+  const anthropicConfig = providerConfig.anthropic || {};
+  const openaiConfig = providerConfig.openai || {};
+
+  const claudeModel = pickFirstModelKey(anthropicConfig.models) || 'claude-opus-4-6';
+  const openaiModel = pickFirstModelKey(openaiConfig.models) || 'chatgpt-5.4';
+
+  const preferredRaw = typeof config?.model === 'string' ? config.model : '';
+  let preferred = null;
+  if (preferredRaw.includes('/')) {
+    const [providerPart, modelPart] = preferredRaw.split('/');
+    const mappedProvider = providerPart === 'anthropic' ? 'claude'
+      : providerPart === 'google' ? 'gemini'
+      : providerPart;
+    if (modelPart) {
+      preferred = {
+        provider: mappedProvider,
+        model: modelPart,
+      };
+    }
+  }
+
+  return {
+    found: true,
+    source: { configPath, authPath },
+    keys: {
+      claude: auth?.anthropic?.key || '',
+      openai: auth?.openai?.key || '',
+    },
+    baseUrls: {
+      claude: anthropicConfig?.options?.baseURL || '',
+      openai: openaiConfig?.options?.baseURL || '',
+    },
+    models: {
+      claude: claudeModel,
+      openai: openaiModel,
+    },
+    preferred,
+  };
+}
 
 function registerCoreIpcHandlers({ app, ipcMain, secureSecret, windowManager, getExecToken }) {
   ipcMain.handle('app:getVersion', () => app.getVersion());
@@ -56,6 +133,14 @@ function registerCoreIpcHandlers({ app, ipcMain, secureSecret, windowManager, ge
 
   ipcMain.handle('dialog:saveFile', (_, options) => {
     return windowManager.saveFile(options);
+  });
+
+  ipcMain.handle('setup:importOpenCode', () => {
+    try {
+      return { ok: true, data: importOpenCodeSetup() };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
   });
 }
 

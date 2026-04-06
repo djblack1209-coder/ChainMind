@@ -19,9 +19,9 @@ const CN_KEY_PATTERNS = [
 ];
 
 const CN_URL_PATTERNS = [
-  /替换.*(?:地址|域名|URL|url|Base|base|网址|链接).*[：:]\s*(\S+)/,
-  /(?:地址|域名|URL|url|Base|base|网址|链接).*替换.*[：:]\s*(\S+)/,
-  /(?:你的|自己的|实际的|真实的)(?:地址|域名|URL|url|网址).*[：:]\s*(\S+)/i,
+  /替换.*?(?:地址|域名|URL|url|Base|base|网址|链接).*?[：:]\s*(https?:\/\/\S+|\S+)/,
+  /(?:地址|域名|URL|url|Base|base|网址|链接).*?替换.*?[：:]\s*(https?:\/\/\S+|\S+)/,
+  /(?:你的|自己的|实际的|真实的)(?:地址|域名|URL|url|网址).*?[：:]\s*(https?:\/\/\S+|\S+)/i,
 ];
 
 // ===== Standard key patterns =====
@@ -49,10 +49,33 @@ const MODEL_PATTERNS = [
   /(?:model|MODEL|模型\s*(?:ID|id|名称|名)?)\s*[：:=]\s*["']?(?:anthropic\/|openai\/)?([a-z0-9][\w.-]*(?:\/[\w.-]+)?)["']?/i,
 ];
 
+function cleanKey(raw: string): string {
+  return raw.trim().replace(/["'，。,;；]+$/g, '').replace(/^["']+|["']+$/g, '');
+}
+
+function isLikelyApiKey(value: string): boolean {
+  const key = cleanKey(value);
+  if (key.length < 16) return false;
+  if (/^(your_|your-|example|sample|replace|替换|<|\{|\[)/i.test(key)) return false;
+
+  return (
+    /^sk-ant-[A-Za-z0-9._-]{10,}$/i.test(key)
+    || /^sk-[A-Za-z0-9._-]{10,}$/i.test(key)
+    || /^AIza[A-Za-z0-9_-]{20,}$/.test(key)
+    || /^[A-Za-z0-9._-]{20,}$/.test(key)
+  );
+}
+
 function cleanUrl(raw: string): string {
   let url = raw.trim();
   // Remove trailing punctuation that might have been captured
   url = url.replace(/[，。、；！？]+$/, '');
+  // Handle protocol-stripped capture like "//example.com"
+  if (url.startsWith('//')) {
+    url = `https:${url}`;
+  }
+  // Normalize accidental extra slashes after protocol
+  url = url.replace(/^(https?):\/{3,}/, '$1://');
   // Add https:// if missing
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = 'https://' + url;
@@ -78,8 +101,9 @@ export function parseConfig(text: string): ParsedConfig {
   // These are the user's ACTUAL values, not template placeholders
   for (const pattern of CN_KEY_PATTERNS) {
     const match = text.match(pattern);
-    if (match && match[1] && match[1].length > 10) {
-      result.apiKey = match[1];
+    const key = match?.[1] ? cleanKey(match[1]) : '';
+    if (key && isLikelyApiKey(key)) {
+      result.apiKey = key;
       break;
     }
   }
@@ -106,9 +130,9 @@ export function parseConfig(text: string): ParsedConfig {
     for (const pattern of KEY_PATTERNS) {
       const match = text.match(pattern);
       if (match) {
-        const key = match[match.length - 1] || match[1];
+        const key = cleanKey(match[match.length - 1] || match[1] || '');
         // Skip placeholder values like "替换成自己KEY"
-        if (key && key.length > 10 && /^[A-Za-z0-9\-_]+$/.test(key)) {
+        if (isLikelyApiKey(key)) {
           result.apiKey = key;
           break;
         }
@@ -168,8 +192,8 @@ function extractFromJson(obj: unknown, result: ParsedConfig, depth = 0): void {
       if (!result.apiKey && (
         lk.includes('key') || lk.includes('token') || lk === 'anthropic_auth_token'
       )) {
-        if (value.length > 10 && /^[A-Za-z0-9\-_]+$/.test(value)) {
-          result.apiKey = value;
+        if (isLikelyApiKey(value)) {
+          result.apiKey = cleanKey(value);
         }
       }
 
@@ -194,7 +218,8 @@ function extractFromJson(obj: unknown, result: ParsedConfig, depth = 0): void {
 export function looksLikeConfig(text: string): boolean {
   const t = text.trim();
   // Has a key-like pattern (real key, not placeholder)
-  const hasKey = /\bsk-[A-Za-z0-9]{10,}\b/.test(t);
+  const hasStrongKey = /\b(sk-ant-[A-Za-z0-9._-]{10,}|sk-[A-Za-z0-9._-]{10,}|AIza[A-Za-z0-9_-]{20,})\b/.test(t);
+  const hasNamedKeyValue = /(?:api[_-]?key|auth[_-]?token|access[_-]?token|密钥|秘钥)\s*["']?\s*[:=]\s*["']?[A-Za-z0-9._-]{16,}/i.test(t);
   // Has a URL or bare domain
   const hasUrl = /https?:\/\/[\w.-]+/.test(t) || /[\w.-]+\.\w{2,}/.test(t);
   // Has JSON-like structure with config keywords
@@ -203,7 +228,8 @@ export function looksLikeConfig(text: string): boolean {
   const hasEnv = /[A-Z_]+=/.test(t);
   // Has Chinese replacement instructions
   const hasCnReplace = /替换.*[：:]/.test(t);
+  // Has explicit base URL style fields
+  const hasBaseUrlField = /(?:base[_-]?url|api[_-]?base|接口地址|中转地址|服务器地址)\s*["']?\s*[:=]/i.test(t);
 
-  // Must have at least a key to be considered config
-  return hasKey && (hasUrl || hasJson || hasEnv || hasCnReplace || t.length > 50);
+  return (hasStrongKey || hasNamedKeyValue) && (hasUrl || hasJson || hasEnv || hasCnReplace || hasBaseUrlField || t.length > 50);
 }

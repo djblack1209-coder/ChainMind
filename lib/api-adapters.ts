@@ -1,7 +1,7 @@
 // Unified API adapter layer for multi-provider streaming support.
 // Thin typed wrappers over lib/llm-core so Electron + Next share one implementation.
 
-import type { AIProvider, EffortLevel } from './types';
+import type { AIProvider, EffortLevel, MessageAttachment } from './types';
 import {
   buildClaudeRequest as coreBuildClaudeRequest,
   buildGeminiRequest as coreBuildGeminiRequest,
@@ -19,6 +19,8 @@ export interface AdapterConfig {
   temperature: number;
   maxTokens: number;
   effort: EffortLevel;
+  images?: { data: string; mimeType: string }[];
+  attachments?: MessageAttachment[];
 }
 
 export interface AdapterRequest {

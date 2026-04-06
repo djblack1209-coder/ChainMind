@@ -6,9 +6,12 @@ export interface AdapterConfig {
   model: string;
   systemPrompt: string;
   userPrompt: string;
+  messages?: { role: 'user' | 'assistant' | 'system'; content: string }[];
   temperature: number;
   maxTokens: number;
   effort: EffortLevel;
+  images?: { data: string; mimeType: string }[];
+  attachments?: { type: string; name?: string; mimeType: string; data: string; url?: string; size?: number }[];
 }
 
 export interface AdapterRequest {

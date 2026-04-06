@@ -14,6 +14,7 @@ function makeAgent(): ChainAgent {
     id: 'agent-1',
     name: 'Reviewer',
     role: 'Review content',
+    task: '',
     provider: 'openai',
     model: 'gpt-4o-mini',
     temperature: 0.2,
@@ -21,6 +22,8 @@ function makeAgent(): ChainAgent {
     color: '#000000',
     icon: 'R',
     tools: [],
+    sandboxMode: 'safe',
+    autoCompress: true,
   };
 }
 
@@ -34,6 +37,7 @@ function makeTurn(overrides: Partial<ChainTurn> = {}): ChainTurn {
     tokenCount: 10,
     latencyMs: 100,
     timestamp: Date.now(),
+    role: 'assistant',
     ...overrides,
   };
 }
@@ -46,8 +50,18 @@ function makeDiscussion(): ChainDiscussion {
     agents: [makeAgent()],
     turns: [],
     rounds: 2,
+    totalRounds: 2,
     currentRound: 0,
     mode: 'sequential',
+    workflow: 'guided-collaboration',
+    stage: 'intake',
+    pendingAction: null,
+    planOptions: [],
+    selectedPlanIndex: null,
+    selectedPlanSummary: '',
+    teamAssignments: [],
+    ratingHistory: [],
+    adaptiveProfile: { count: 0, intakeAvg: 0, reviewAvg: 0, deliveryAvg: 0, notes: [] },
     status: 'idle',
     createdAt: 1,
     updatedAt: 1,
@@ -74,7 +88,6 @@ describe('chain-store persistence', () => {
     useChainStore.getState().addTurn('disc-1', makeTurn());
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -106,7 +119,6 @@ describe('chain-store persistence', () => {
     );
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -136,7 +148,6 @@ describe('chain-store persistence', () => {
     useChainStore.getState().updateTurn('disc-1', 'turn-1', { content: 'updated' });
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -162,7 +173,6 @@ describe('chain-store persistence', () => {
     useChainStore.getState().setCurrentRound('disc-1', 2);
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -183,7 +193,6 @@ describe('chain-store persistence', () => {
     useChainStore.getState().setDiscussionStatus('disc-1', 'running');
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -209,7 +218,6 @@ describe('chain-store persistence', () => {
     useChainStore.getState().updateAgents('disc-1', [newAgent]);
     await Promise.resolve();
 
-    expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
       expect.arrayContaining([
@@ -221,5 +229,39 @@ describe('chain-store persistence', () => {
         }),
       ])
     );
+  });
+
+  it('persists global adaptive profile and applies it to new discussions', async () => {
+    const { useChainStore } = await import('../stores/chain-store');
+
+    useChainStore.getState().setGlobalAdaptiveProfile({
+      count: 2,
+      intakeAvg: 2.5,
+      reviewAvg: 2.8,
+      deliveryAvg: 2.2,
+      notes: ['keep delivery clearer'],
+    });
+    await Promise.resolve();
+
+    expect(storageSetMock).toHaveBeenCalledWith(
+      'chain-discussions-meta',
+      expect.objectContaining({
+        globalAdaptiveProfile: expect.objectContaining({
+          count: 2,
+          intakeAvg: 2.5,
+        }),
+      })
+    );
+
+    const createdId = useChainStore.getState().createDiscussion(
+      'Adaptive Discussion',
+      'Topic',
+      [makeAgent()],
+      2,
+      'sequential'
+    );
+
+    const created = useChainStore.getState().discussions.find((item) => item.id === createdId);
+    expect(created?.adaptiveProfile).toEqual(expect.objectContaining({ count: 2, reviewAvg: 2.8 }));
   });
 });

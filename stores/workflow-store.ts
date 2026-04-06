@@ -4,14 +4,13 @@ import { create } from 'zustand';
 import { storageGet, storageSet } from '@/lib/storage';
 import { useFlowStore } from './flow-store';
 import type { Node, Edge } from 'reactflow';
-import type { AINodeData } from '@/lib/types';
 
 export interface Workflow {
   id: string;
   name: string;
   createdAt: number;
   updatedAt: number;
-  nodes: Node<AINodeData>[];
+  nodes: Node[];
   edges: Edge[];
   globalFacts: string;
 }
