@@ -10,7 +10,7 @@ import { isAuthorizedExecRequest } from '@/lib/internal-route-auth';
 
 const MAX_FILES_BODY_BYTES = 12 * 1024 * 1024;
 const MAX_WRITE_BYTES = 10 * 1024 * 1024;
-const DEFAULT_LIST_PATH = resolve(homedir(), 'Desktop/AI Chain Discussion');
+const DEFAULT_LIST_PATH = resolve(/* turbopackIgnore: true */ homedir(), 'Desktop/AI Chain Discussion');
 
 type FileAction = 'read' | 'write' | 'list' | 'stat';
 

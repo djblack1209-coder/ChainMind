@@ -162,7 +162,8 @@ export function parseStageRatings(content: string): ChainStageRatings | null {
 }
 
 // ─── 自适应阶段提示 ───────────────────────────────────────
-export function buildAdaptiveStageHint(profile: ChainAdaptiveProfile, stage?: string): string {
+export function buildAdaptiveStageHint(profile?: ChainAdaptiveProfile, stage?: string): string {
+  if (!profile) return '';
   if (profile.count === 0) return '';
   const hints: string[] = [];
   if (stage === 'intake' && profile.intakeAvg > 0) hints.push(`接待平均评分 ${profile.intakeAvg.toFixed(1)}`);

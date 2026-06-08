@@ -130,9 +130,9 @@ function ReactPreview({ content }: { content: string }) {
 <html>
 <head>
   <meta charset="utf-8"/>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"><\/script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"><\/script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"><\/script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     * { margin: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; background: #fff; color: #1a1a1a; }
@@ -154,7 +154,7 @@ function ReactPreview({ content }: { content: string }) {
     } catch (e) {
       document.getElementById('error').textContent = e.message + '\\n' + (e.stack || '');
     }
-  <\/script>
+  </script>
 </body>
 </html>`, [content]);
 

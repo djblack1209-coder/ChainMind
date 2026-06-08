@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChainAgent, ChainDiscussion, ChainTurn } from '../lib/types';
 
 const storageGetMock = vi.fn();
@@ -70,11 +70,21 @@ function makeDiscussion(): ChainDiscussion {
 
 describe('chain-store persistence', () => {
   beforeEach(async () => {
+    vi.useFakeTimers();
     vi.clearAllMocks();
     vi.resetModules();
     storageGetMock.mockResolvedValue(undefined);
     storageSetMock.mockResolvedValue(undefined);
   });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  async function flushPersistenceDebounce() {
+    await vi.advanceTimersByTimeAsync(500);
+  }
 
   it('persists after addTurn', async () => {
     const { useChainStore } = await import('../stores/chain-store');
@@ -86,7 +96,7 @@ describe('chain-store persistence', () => {
     });
 
     useChainStore.getState().addTurn('disc-1', makeTurn());
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
@@ -117,7 +127,7 @@ describe('chain-store persistence', () => {
       2,
       'sequential'
     );
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
@@ -146,7 +156,7 @@ describe('chain-store persistence', () => {
     });
 
     useChainStore.getState().updateTurn('disc-1', 'turn-1', { content: 'updated' });
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
@@ -171,7 +181,7 @@ describe('chain-store persistence', () => {
     });
 
     useChainStore.getState().setCurrentRound('disc-1', 2);
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
@@ -191,7 +201,7 @@ describe('chain-store persistence', () => {
     });
 
     useChainStore.getState().setDiscussionStatus('disc-1', 'running');
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
@@ -216,7 +226,7 @@ describe('chain-store persistence', () => {
       name: 'Planner',
     };
     useChainStore.getState().updateAgents('disc-1', [newAgent]);
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledWith(
       'chain-discussions',
