@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChatMessage, Conversation } from '../lib/types';
 
 const storageGetMock = vi.fn();
@@ -33,11 +33,21 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
 
 describe('chat-store persistence', () => {
   beforeEach(async () => {
+    vi.useFakeTimers();
     vi.clearAllMocks();
     vi.resetModules();
     storageGetMock.mockResolvedValue(undefined);
     storageSetMock.mockResolvedValue(undefined);
   });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  async function flushPersistenceDebounce() {
+    await vi.advanceTimersByTimeAsync(500);
+  }
 
   it('persists after addMessage', async () => {
     const { useChatStore } = await import('../stores/chat-store');
@@ -49,7 +59,7 @@ describe('chat-store persistence', () => {
     });
 
     useChatStore.getState().addMessage('conv-1', makeMessage());
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
@@ -75,7 +85,7 @@ describe('chat-store persistence', () => {
     });
 
     const createdId = useChatStore.getState().createConversation('openai', 'gpt-4o-mini');
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
@@ -106,7 +116,7 @@ describe('chat-store persistence', () => {
     });
 
     useChatStore.getState().updateMessage('conv-1', 'msg-1', { content: 'updated' });
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
@@ -138,7 +148,7 @@ describe('chat-store persistence', () => {
     });
 
     useChatStore.getState().clearMessages('conv-1');
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(
@@ -163,7 +173,7 @@ describe('chat-store persistence', () => {
     });
 
     useChatStore.getState().setSystemPrompt('conv-1', 'Be concise');
-    await Promise.resolve();
+    await flushPersistenceDebounce();
 
     expect(storageSetMock).toHaveBeenCalledTimes(1);
     expect(storageSetMock).toHaveBeenCalledWith(

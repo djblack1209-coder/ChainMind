@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
         try {
           await forwardStreamChunks(upstreamBody, streamFormat, (chunk) => {
-            if (chunk.type === 'text' || chunk.type === 'error') {
+            if (chunk.type === 'text' || chunk.type === 'thinking' || chunk.type === 'error') {
               sendChunk(chunk.type, chunk.content);
             }
           });
