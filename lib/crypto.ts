@@ -1,5 +1,5 @@
-// Military-grade encryption: PBKDF2-SHA256 + AES-256-GCM
-// All keys exist in memory only during operations and are zeroized after.
+// PBKDF2-SHA256 + AES-256-GCM for stored API keys.
+// JavaScript strings and CryptoKey objects cannot be reliably zeroized.
 
 import type { EncryptedPayload } from './types';
 

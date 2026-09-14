@@ -1,3 +1,5 @@
+> 历史文档：本文件记录当时状态，部分条目已过时。当前入口、验证与待办请看 [project-status.md](project-status.md)。
+
 # ChainMind 当前项目全景地图与推进报告
 
 生成日期：2026-06-04  

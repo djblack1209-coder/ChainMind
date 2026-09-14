@@ -71,7 +71,7 @@ function getAllowedBases(): string[] {
     resolve(home, 'Projects'),
     resolve('/tmp'),
   ]
-    .filter((p) => existsSync(p))
+    .filter((p) => existsSync(/*turbopackIgnore: true*/ p))
     .map((p) => safeRealpath(p));
 }
 
@@ -117,7 +117,7 @@ function getWriteAllowedBases(): string[] {
     resolve(home, 'Documents'),
     resolve('/tmp'),
   ]
-    .filter((p) => existsSync(p) || p.includes('workspace')) // workspace may not exist yet
+    .filter((p) => existsSync(/*turbopackIgnore: true*/ p) || p.includes('workspace')) // workspace may not exist yet
     .map((p) => {
       try { return realpathSync(p); } catch { return resolve(normalize(p)); }
     });

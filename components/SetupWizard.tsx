@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApiKeyStore } from '@/stores/api-key-store';
 import type { AIProvider } from '@/lib/types';
 import { DEFAULT_PROVIDER_MODEL, DEFAULT_BASE_URLS, MODEL_OPTIONS, MODEL_SPOTLIGHTS } from '@/lib/types';
+import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
 
 const STEPS = ['欢迎', 'API 配置', '选择模型', '快速导览', '准备就绪'];
@@ -37,6 +38,7 @@ export default function SetupWizard({ onComplete }: Props) {
   const [testing, setTesting] = useState<AIProvider | null>(null);
   const [testResults, setTestResults] = useState<Record<string, 'ok' | 'fail' | null>>({});
 
+  const probeModels = useApiKeyStore(s => s.probeModels);
   const saveKey = useApiKeyStore(s => s.saveKey);
   const setBaseUrl = useApiKeyStore(s => s.setBaseUrl);
 
@@ -66,9 +68,11 @@ export default function SetupWizard({ onComplete }: Props) {
     if (!keys[provider].trim()) return;
     setTesting(provider);
     try {
-      // Simple validation: key length check
-      const valid = keys[provider].trim().length > 10;
-      setTestResults(r => ({ ...r, [provider]: valid ? 'ok' : 'fail' }));
+      const result = await probeModels(provider, {
+        apiKey: keys[provider].trim(),
+        baseUrl: urls[provider].trim(),
+      });
+      setTestResults(r => ({ ...r, [provider]: result.ok ? 'ok' : 'fail' }));
     } catch {
       setTestResults(r => ({ ...r, [provider]: 'fail' }));
     }
@@ -101,6 +105,7 @@ export default function SetupWizard({ onComplete }: Props) {
         )}
 
         {/* Step 1: API Keys */}
+        <div className="px-6 pb-2 text-center"><Link href="/demo" className="text-xs text-[var(--brand-primary)] underline">无需 API Key，体验完整协作示例</Link></div>
         {step === 1 && (
           <div className="px-6 py-6">
             <h2 className="text-sm font-semibold text-[var(--text-primary)]">配置 API 密钥</h2>
@@ -110,23 +115,23 @@ export default function SetupWizard({ onComplete }: Props) {
                 <div key={p.id} className="rounded-xl border border-[var(--border-tertiary)] bg-[var(--bg-secondary)] p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`text-xs font-bold ${p.color}`}>{p.name}</span>
-                    {testResults[p.id] === 'ok' && <span className="text-[9px] text-emerald-400">已验证</span>}
-                    {testResults[p.id] === 'fail' && <span className="text-[9px] text-rose-400">验证失败</span>}
+                    {testResults[p.id] === 'ok' && <span className="text-[9px] text-emerald-400">模型列表可访问</span>}
+                    {testResults[p.id] === 'fail' && <span className="text-[9px] text-rose-400">连接未通过（可稍后在 API 设置中诊断）</span>}
                   </div>
                   <input
-                    type="password" placeholder="API Key" value={keys[p.id]}
-                    onChange={e => setKeys(k => ({ ...k, [p.id]: e.target.value }))}
+                    aria-label={`${p.name} API Key`} disabled={testing !== null} type="password" placeholder="API Key" value={keys[p.id]}
+                    onChange={e => { setKeys(k => ({ ...k, [p.id]: e.target.value })); setTestResults(r => ({ ...r, [p.id]: null })); }}
                     className="input w-full text-[11px] mb-1.5"
                   />
                   <div className="flex gap-1.5">
                     <input
-                      type="text" placeholder="Base URL" value={urls[p.id]}
-                      onChange={e => setUrls(u => ({ ...u, [p.id]: e.target.value }))}
+                      aria-label={`${p.name} Base URL`} disabled={testing !== null} type="text" placeholder="Base URL" value={urls[p.id]}
+                      onChange={e => { setUrls(u => ({ ...u, [p.id]: e.target.value })); setTestResults(r => ({ ...r, [p.id]: null })); }}
                       className="input flex-1 text-[10px]"
                     />
                     <button
                       onClick={() => handleTestConnection(p.id)}
-                      disabled={!keys[p.id].trim() || testing === p.id}
+                      disabled={!keys[p.id].trim() || testing !== null}
                       className="btn btn-secondary text-[10px] px-2 py-1 disabled:opacity-40"
                     >
                       {testing === p.id ? '...' : '测试'}

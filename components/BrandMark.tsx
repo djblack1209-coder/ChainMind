@@ -90,7 +90,7 @@ export default function BrandMark({
       {showWordmark && (
         <div>
           <div className={`font-display leading-none text-[var(--text-primary)] ${s.title}`}>
-            AI Chain<span className="ml-1 text-[var(--text-tertiary)] font-normal text-[0.6em]">IDE</span>
+            ChainMind
           </div>
           {subtitle && (
             <div className={`mt-0.5 text-[var(--text-tertiary)] ${s.subtitle}`}>{subtitle}</div>
