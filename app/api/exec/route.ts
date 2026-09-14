@@ -77,7 +77,7 @@ function getAllowedBases(): string[] {
     resolve(home, 'Projects'),
     resolve('/tmp'),
   ]
-    .filter((p) => existsSync(p))
+    .filter((p) => existsSync(/*turbopackIgnore: true*/ p))
     .map((p) => safeRealpath(p));
 }
 

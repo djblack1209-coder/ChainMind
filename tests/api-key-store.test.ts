@@ -127,4 +127,32 @@ describe('api-key-store secure secret behavior', () => {
       })
     );
   });
+
+  it('does not consider a long key valid when model discovery fails', async () => {
+    const { probeModelsRequest } = await import('../lib/llm-client');
+    vi.mocked(probeModelsRequest).mockResolvedValue({ models: [], error: 'Unauthorized' });
+    const { useApiKeyStore } = await import('../stores/api-key-store');
+    const result = await useApiKeyStore.getState().probeModels('openai', {
+      apiKey: 'invalid-but-long-enough-for-the-old-length-check',
+      baseUrl: 'https://example.test/v1',
+    });
+    expect(result.ok).toBe(false);
+    expect(probeModelsRequest).toHaveBeenCalledWith('https://example.test/v1', 'invalid-but-long-enough-for-the-old-length-check');
+    expect(encryptMock).not.toHaveBeenCalled();
+    expect(useApiKeyStore.getState().keys.openai).toBeNull();
+  });
+
+  it('reports accessible models without saving the candidate API key', async () => {
+    const { probeModelsRequest } = await import('../lib/llm-client');
+    vi.mocked(probeModelsRequest).mockResolvedValue({ models: ['sample-model'], endpoint: 'https://example.test/v1/models' });
+    const { useApiKeyStore } = await import('../stores/api-key-store');
+    const result = await useApiKeyStore.getState().probeModels('openai', {
+      apiKey: 'test-candidate-key',
+      baseUrl: 'https://example.test/v1',
+    });
+    expect(result.ok).toBe(true);
+    expect(result.models).toEqual(['sample-model']);
+    expect(encryptMock).not.toHaveBeenCalled();
+    expect(useApiKeyStore.getState().keys.openai).toBeNull();
+  });
 });

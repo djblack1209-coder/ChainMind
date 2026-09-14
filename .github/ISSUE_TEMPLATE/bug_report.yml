@@ -1,0 +1,23 @@
+name: Bug report / 问题反馈
+description: Share a reproducible problem. Please remove API keys and personal data.
+title: '[Bug]: '
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce / 复现步骤
+      description: Include the page or workspace mode, input, expected result and actual result. Use sample data.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / 环境
+      placeholder: macOS, Node 22, browser or Electron, commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted logs or screenshots / 脱敏日志或截图
+      description: Do not include API keys, access tokens, private files or conversations.

@@ -1,3 +1,5 @@
+> 历史文档：本文件记录当时状态，部分条目已过时。当前入口、验证与待办请看 [project-status.md](project-status.md)。
+
 # ChainMind 升级设计文档
 
 > 生成时间: 2026-03-22 | 基于代码审查 + GitHub调研

@@ -2,8 +2,9 @@
 
 // Workspace — TRAE-style IDE layout: activity bar + sidebar + editor + terminal
 
-import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import ApiKeyManager from '@/components/ApiKeyManager';
 import BrandMark from '@/components/BrandMark';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -21,7 +22,6 @@ import type { AIProvider } from '@/lib/types';
 import { DEFAULT_PROVIDER_MODEL, MODEL_OPTIONS, MODEL_SPOTLIGHTS, getModelTokenProfile, formatTokenCount } from '@/lib/types';
 import type { SlashCommand } from '@/lib/tools';
 import { useTitlebarInset } from '@/lib/use-titlebar-inset';
-import { PRESET_CONFIG } from '@/lib/preset-config';
 import { useTheme } from '@/components/ThemeProvider';
 
 const ChatPanel = lazy(() => import('@/components/ChatPanel'));
@@ -57,8 +57,6 @@ function WorkspaceInner() {
   const [tagInput, setTagInput] = useState<{ convId: string; value: string } | null>(null);
 
   const loadKeys = useApiKeyStore((s) => s.loadKeys);
-  const saveKey = useApiKeyStore((s) => s.saveKey);
-  const setStoreBaseUrl = useApiKeyStore((s) => s.setBaseUrl);
   const keysLoaded = useApiKeyStore((s) => s.loaded);
   const keys = useApiKeyStore((s) => s.keys);
 
@@ -76,7 +74,6 @@ function WorkspaceInner() {
   const user = useAuthStore((s) => s.user);
 
   const { toast } = useToast();
-  const autoImportAttemptedRef = useRef(false);
 
   const hasAnyKey = keys.claude !== null || keys.openai !== null || keys.gemini !== null;
 
@@ -104,104 +101,6 @@ function WorkspaceInner() {
     if (!chatLoaded) loadConversations();
     if (!chainLoaded) loadDiscussions();
   }, [keysLoaded, loadKeys, chatLoaded, loadConversations, chainLoaded, loadDiscussions]);
-
-  // 首次运行时自动写入预置 OpenCode 配置（浏览器模式）
-  useEffect(() => {
-    if (!keysLoaded || hasAnyKey) return;
-    if (typeof window === 'undefined' || window.electronAPI) return;
-
-    const run = async () => {
-      const { baseURL, apiKey, models } = PRESET_CONFIG;
-      await setStoreBaseUrl('claude', baseURL);
-      await setStoreBaseUrl('openai', baseURL);
-      await saveKey('claude', apiKey);
-      await saveKey('openai', apiKey);
-      setCurrentProvider('claude');
-      setCurrentModel(models.claude);
-      toast('success', '已自动载入预置模型配置，可直接开始对话');
-    };
-
-    run().catch(() => {});
-  // eslint-disable-next-line
-  }, [keysLoaded]);
-
-  // Auto-import OpenCode setup on first run in Electron mode.
-  useEffect(() => {
-    if (!keysLoaded || !chatLoaded) return;
-    if (autoImportAttemptedRef.current) return;
-    if (hasAnyKey || conversations.length > 0) return;
-    if (typeof window === 'undefined' || !window.electronAPI?.importOpenCodeSetup) return;
-
-    autoImportAttemptedRef.current = true;
-
-    const run = async () => {
-      const result = await window.electronAPI!.importOpenCodeSetup();
-      if (!result.ok || !result.data?.found) return;
-
-      const setup = result.data;
-      let importedCount = 0;
-
-      if (setup.baseUrls.claude?.trim()) {
-        await setStoreBaseUrl('claude', setup.baseUrls.claude.trim());
-      }
-      if (setup.baseUrls.openai?.trim()) {
-        await setStoreBaseUrl('openai', setup.baseUrls.openai.trim());
-      }
-
-      if (setup.keys.claude?.trim()) {
-        await saveKey('claude', setup.keys.claude.trim());
-        importedCount++;
-      }
-      if (setup.keys.openai?.trim()) {
-        await saveKey('openai', setup.keys.openai.trim());
-        importedCount++;
-      }
-
-      if (importedCount === 0) return;
-
-      const claudeModel = setup.models.claude || DEFAULT_PROVIDER_MODEL.claude;
-      const openaiModel = setup.models.openai || DEFAULT_PROVIDER_MODEL.openai;
-
-      if (setup.keys.claude?.trim()) {
-        createConversation('claude', claudeModel);
-      }
-      if (setup.keys.openai?.trim()) {
-        createConversation('openai', openaiModel);
-      }
-
-      const preferredProvider = setup.preferred?.provider;
-      const preferredModel = setup.preferred?.model;
-
-      if (preferredProvider === 'claude' && setup.keys.claude?.trim() && preferredModel) {
-        setCurrentProvider('claude');
-        setCurrentModel(preferredModel);
-      } else if (preferredProvider === 'openai' && setup.keys.openai?.trim() && preferredModel) {
-        setCurrentProvider('openai');
-        setCurrentModel(preferredModel);
-      } else if (setup.keys.claude?.trim()) {
-        setCurrentProvider('claude');
-        setCurrentModel(claudeModel);
-      } else if (setup.keys.openai?.trim()) {
-        setCurrentProvider('openai');
-        setCurrentModel(openaiModel);
-      }
-
-      toast('success', '已从 OpenCode 自动导入模型与密钥配置');
-    };
-
-    run().catch((err) => {
-      toast('error', `OpenCode 自动导入失败: ${String(err).slice(0, 120)}`);
-    });
-  }, [
-    keysLoaded,
-    chatLoaded,
-    hasAnyKey,
-    conversations.length,
-    createConversation,
-    saveKey,
-    setStoreBaseUrl,
-    toast,
-  ]);
 
   // Show setup wizard on first run
   useEffect(() => {
@@ -766,6 +665,10 @@ function WorkspaceInner() {
           </div>
         </div>
       </div>
+
+      <Link href="/demo" className="fixed bottom-3 right-4 z-40 rounded-lg border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+        无需密钥 · 查看示例
+      </Link>
 
       {/* Modal overlays */}
       <ApiKeyManager open={apiKeysOpen} onClose={() => setApiKeysOpen(false)} />
