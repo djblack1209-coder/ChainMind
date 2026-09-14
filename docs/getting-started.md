@@ -50,13 +50,12 @@ Node/Electron ABI rebuilds. This change is documented in the
 | Symptom | Action |
 | :--- | :--- |
 | Native loading fails after updating | Run `npm ci` to remove old binaries; confirm Node 22.12+ |
-| No prebuild for your platform | Try `npm run rebuild:node-native` with a native compiler toolchain |
+| No prebuild for your platform | Try `npm run rebuild:native` with a native compiler toolchain |
 | Native compilation fails on macOS | Install Xcode Command Line Tools with `xcode-select --install` |
 | Native compilation fails on Linux | Install Python 3, make and a C++ compiler for your distribution |
 
-`npm test` and `npm run test:ci` do not change the native ABI. The old
-`rebuild:electron-native` and `electron:fix-native` command names remain as aliases
-for `npm rebuild better-sqlite3` for existing developer workflows.
+`npm test` and `npm run test:ci` do not change the native ABI.
+The former Node/Electron rebuild aliases have been consolidated into `rebuild:native`.
 
 ## Build and distribution
 
@@ -70,9 +69,10 @@ and launches it on `127.0.0.1:3000`. Use `npm run start -- --port 3001` for anot
 port. It reports a clear error if no production build exists.
 
 Packaging scripts (`electron:pack`, `electron:build`) are development scaffolding,
-not a verified release pipeline. Before distribution, supply the missing platform
-icons, replace the placeholder release repository, verify the Electron version
-across target platforms, review licensing, and verify signing, installation and updates.
+not a verified release pipeline. Platform icons now live in `resources/`; the
+update repository points to this project. Before distribution, verify the Electron
+version across target platforms, review licensing, and verify signing, installation
+and updates. See [brand assets](brand.md) to regenerate the icons.
 
 ## Safe local use
 

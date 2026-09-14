@@ -3,12 +3,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatStore } from '@/stores/chat-store';
 import { useApiKeyStore } from '@/stores/api-key-store';
-import { useMaskStore, getBuiltinMasks, type Mask } from '@/stores/mask-store';
+import { useMaskStore } from '@/stores/mask-store';
 import { parseConfig, looksLikeConfig, type ParsedConfig } from '@/lib/config-parser';
 import { DEFAULT_PROVIDER_MODEL, MODEL_SPOTLIGHTS, pickStrongestModel, fuzzyMatchModel, getModelTokenProfile, formatTokenCount } from '@/lib/types';
 import { matchCommands, processSlashCommand, SLASH_COMMANDS, type SlashCommand, matchColonCommands, parseColonCommand, type ColonCommand } from '@/lib/tools';
 import { probeModelsRequest, streamChatRequest } from '@/lib/llm-client';
-import { countTokens, estimateCost, formatCost, formatTokens } from '@/lib/token-counter';
+import { countTokens, formatTokens } from '@/lib/token-counter';
 import type { AIProvider, ChatMessage } from '@/lib/types';
 import { memorySystem } from '@/lib/memory-system';
 import { chatControllerPool } from '@/lib/chat-controller';
@@ -216,8 +216,6 @@ export default function ChatPanel() {
 
       const latencyMs = Math.round(performance.now() - startTime);
       const tokenCount = countTokens(fullContent);
-      const inputTokens = countTokens(opts.userPrompt + opts.systemPrompt);
-      const cost = estimateCost(opts.model, inputTokens, tokenCount);
       updateMessage(opts.convId, opts.assistantMsgId, {
         content: fullContent,
         error: streamError || undefined,

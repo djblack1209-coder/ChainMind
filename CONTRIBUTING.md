@@ -37,6 +37,9 @@ Add regression tests for changed behavior; documentation-only changes need link
 and diff checks. For UI changes, verify the running page at desktop and mobile sizes.
 Use sample content in screenshots. Do not describe a mocked test as a live provider test.
 
+For logo or icon changes, edit `lib/brand.json`, run `npm run brand:generate`,
+and review the generated [brand assets](docs/brand.md).
+
 ## Pull requests
 
 - Explain the user-visible problem and resulting behavior.

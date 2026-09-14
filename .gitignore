@@ -41,3 +41,6 @@ tsconfig.tsbuildinfo
 # Storage (user data)
 storage/
 logs/
+
+# Local code graph cache
+.codegraph/

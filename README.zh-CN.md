@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/hero.svg" alt="ChainMind：让多种视角形成清晰、可执行的决策" width="100%" /></p>
+<p align="center"><img src="docs/assets/hero.svg" alt="ChainMind：多种视角，方向由你" width="100%" /></p>
 
 <p align="center"><strong>本地优先的 AI 协作工作台：需求澄清、角色评审、人工决策与交付报告。</strong></p>
 
@@ -86,7 +86,7 @@ Electron 会自行启动 `127.0.0.1:3456` 的 Next.js 服务。当前**没有经
 | 桌面扩展 | 文件、工具、SQLite、MCP stdio、插件底层模块；部分 UI 未完整接通 |
 | DAG 编辑器 | 引擎和节点组件存在，完整编辑器尚未挂载到工作台 |
 | 团队云协作 | 未实现；演示中的云端方案用于说明架构权衡 |
-| 安装与更新 | 有配置；仍需补图标、Electron 跨平台验证、签名和更新验收 |
+| 安装与更新 | 图标和配置已补齐；仍需 Electron 跨平台安装、签名和更新验收 |
 
 会话保存在本地，不代表调用云模型时数据不会离开设备。浏览器密钥存储的回退机制也不是专业密钥保险库。开发服务应保持在 loopback；详见 [SECURITY.md](SECURITY.md)。
 
@@ -111,3 +111,5 @@ npm run build
 当前尚未选定根许可证，不能默认按 MIT 等宽松许可复用。发布前还需完成上游归属检查。
 
 感谢 React、Next.js、Electron、Zustand、React Flow 及 `package.json` 所列依赖。部分管理模块有 GVA 设计借鉴或移植注释，详见[归属状态](docs/attribution.md)。
+
+品牌图形、桌面图标及生成方法见[品牌设计说明](docs/brand.md)。

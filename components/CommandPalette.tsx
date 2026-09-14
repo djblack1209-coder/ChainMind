@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Command } from "cmdk";
 import {
   MessageSquarePlus, Trash2, Settings, Moon, Sun, Download,
-  Terminal, Search, Keyboard, Zap, RotateCcw, MessageCircle
+  Terminal, Search, Zap, MessageCircle
 } from "lucide-react";
 import { useChatStore } from "@/stores/chat-store";
 import { useTheme } from "@/components/ThemeProvider";
@@ -13,7 +13,6 @@ interface CommandPaletteProps {
   onNewChat?: () => void;
   onOpenSettings?: () => void;
   onToggleTerminal?: () => void;
-  onToggleTheme?: () => void;
   onExportChat?: () => void;
 }
 
@@ -29,7 +28,6 @@ export default function CommandPalette({
   onNewChat,
   onOpenSettings,
   onToggleTerminal,
-  onToggleTheme,
   onExportChat,
 }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);

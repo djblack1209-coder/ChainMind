@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApiKeyStore } from '@/stores/api-key-store';
 import type { AIProvider } from '@/lib/types';
-import { DEFAULT_PROVIDER_MODEL, DEFAULT_BASE_URLS, MODEL_OPTIONS, MODEL_SPOTLIGHTS } from '@/lib/types';
+import { DEFAULT_PROVIDER_MODEL, DEFAULT_BASE_URLS, MODEL_SPOTLIGHTS } from '@/lib/types';
 import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
 
@@ -33,7 +33,6 @@ export default function SetupWizard({ onComplete }: Props) {
     claude: PROVIDERS[0].defaultUrl, openai: PROVIDERS[1].defaultUrl, gemini: PROVIDERS[2].defaultUrl,
     deepseek: DEFAULT_BASE_URLS.deepseek, ollama: DEFAULT_BASE_URLS.ollama, 'openai-compatible': DEFAULT_BASE_URLS['openai-compatible'],
   });
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('claude');
   const [selectedModel, setSelectedModel] = useState(DEFAULT_PROVIDER_MODEL.claude);
   const [testing, setTesting] = useState<AIProvider | null>(null);
   const [testResults, setTestResults] = useState<Record<string, 'ok' | 'fail' | null>>({});
@@ -59,9 +58,9 @@ export default function SetupWizard({ onComplete }: Props) {
 
   // Auto-select provider based on keys
   useEffect(() => {
-    if (keys.claude.trim()) { setSelectedProvider('claude'); setSelectedModel(DEFAULT_PROVIDER_MODEL.claude); }
-    else if (keys.openai.trim()) { setSelectedProvider('openai'); setSelectedModel(DEFAULT_PROVIDER_MODEL.openai); }
-    else if (keys.gemini.trim()) { setSelectedProvider('gemini'); setSelectedModel(DEFAULT_PROVIDER_MODEL.gemini); }
+    if (keys.claude.trim()) { setSelectedModel(DEFAULT_PROVIDER_MODEL.claude); }
+    else if (keys.openai.trim()) { setSelectedModel(DEFAULT_PROVIDER_MODEL.openai); }
+    else if (keys.gemini.trim()) { setSelectedModel(DEFAULT_PROVIDER_MODEL.gemini); }
   }, [keys]);
 
   const handleTestConnection = async (provider: AIProvider) => {
@@ -156,7 +155,7 @@ export default function SetupWizard({ onComplete }: Props) {
               {MODEL_SPOTLIGHTS.filter(s => keys[s.provider].trim()).map(spot => (
                 <button
                   key={spot.model}
-                  onClick={() => { setSelectedProvider(spot.provider); setSelectedModel(spot.model); }}
+                  onClick={() => { setSelectedModel(spot.model); }}
                   className={`w-full rounded-xl border p-3 text-left transition ${
                     selectedModel === spot.model
                       ? 'border-[var(--border-primary)] bg-[var(--brand-primary-soft)]'

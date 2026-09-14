@@ -1,0 +1,13 @@
+{
+  "name": "ChainMind",
+  "concept": "Decision Weave",
+  "viewBox": "0 0 64 64",
+  "ribbon": "M27 8C16.5 8 8 16.5 8 27s8.5 19 19 19h4L21 36c-5-3-6-8-3-13s9-6 13-2l16 16 9-9-16-16C36.5 9.5 32 8 27 8Z",
+  "colors": {
+    "ink": "#10231e",
+    "paper": "#f3f5e9",
+    "lime": "#bfe66c",
+    "jade": "#69b99d",
+    "muted": "#aac0b5"
+  }
+}

@@ -14,7 +14,8 @@ acceptance criteria, not delivery promises or completed features.
 ## Then: earn a desktop release
 
 - [ ] Complete cross-platform regression of the Electron 44 migration: preload, IPC, native SQLite, rendering and packaged installation.
-- [ ] Supply application icons, correct release repository, signing/notarization and an install/update/rollback checklist.
+- [x] Unify application icons and point update metadata at this repository.
+- [ ] Verify signing/notarization and an install/update/rollback checklist.
 - [ ] Confirm root licensing and upstream notices before calling the project permissively licensed or distributing installers.
 - [ ] Test export/import and recovery of conversations, keys and SQLite data independently.
 - [ ] Reproduce installation and the primary discussion flow on macOS and Windows; record exact versions and evidence.

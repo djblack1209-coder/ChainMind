@@ -199,7 +199,7 @@ export const useMCPStore = create<MCPState>()((set, get) => ({
   },
 
   saveServers: async () => {
-    const toSave = get().servers.map(({ status, tools, error, ...rest }) => ({
+    const toSave = get().servers.map(({ status: _status, tools: _tools, error: _error, ...rest }) => ({
       ...rest,
       status: 'disconnected' as const,
       tools: [],

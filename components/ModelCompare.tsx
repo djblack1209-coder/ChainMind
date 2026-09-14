@@ -30,7 +30,7 @@ const DEFAULT_MODELS = ['claude-sonnet-4-6', 'gpt-4o', 'gemini-2.0-flash'];
 
 export default function ModelCompare() {
   const [prompt, setPrompt] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState('你是一个有帮助的AI助手。请用中文回答。');
+  const systemPrompt = '你是一个有帮助的AI助手。请用中文回答。';
   const [slots, setSlots] = useState<ModelSlot[]>([]);
   const [selectedModels, setSelectedModels] = useState<string[]>(DEFAULT_MODELS.slice(0, 3));
   const [isRunning, setIsRunning] = useState(false);

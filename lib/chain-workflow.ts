@@ -2,8 +2,6 @@
 
 import type {
   ChainAgent,
-  ChainTurn,
-  ChainDiscussion,
   ChainAdaptiveProfile,
   ChainTeamAssignment,
   ChainStageRatings,

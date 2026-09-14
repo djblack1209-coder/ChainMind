@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="ChainMind — Think in perspectives. Build with clarity." width="100%" />
+  <img src="docs/assets/hero.svg" alt="ChainMind — Many minds. Your direction." width="100%" />
 </p>
 
 <p align="center">
@@ -122,7 +122,7 @@ For a walkthrough of the trade-offs and a five-minute demo script, see the
 | Desktop integrations | File indexing, native tools, SQLite, MCP stdio and plugin modules; not all UI paths are complete |
 | DAG editor | Engine and node components exist; a complete editor is not mounted in the workspace |
 | Cloud collaboration | Not implemented; the sample cloud plan is an architectural example |
-| Distribution | Packaging configuration exists; icons, cross-platform Electron verification, signing and update delivery need release work |
+| Distribution | Platform icons and packaging configuration exist; cross-platform installation, signing and update delivery need release work |
 
 Local persistence does **not** mean cloud inference stays on the device. The browser
 key-storage fallback is not a hardened vault. Keep the server on loopback; this is
@@ -147,6 +147,7 @@ runtime. See [CONTRIBUTING.md](CONTRIBUTING.md).
 The next priorities are a reliable real-provider discussion loop, a smaller guided
 workflow controller, a real MCP configuration surface, and reproducible desktop releases.
 Acceptance criteria are in the [roadmap](docs/roadmap.md).
+Logo sources and exports are in the [brand guide](docs/brand.md).
 
 Found an onboarding problem or have a useful discussion example?
 [Open an issue](https://github.com/djblack1209-coder/ChainMind/issues/new/choose).

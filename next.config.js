@@ -4,7 +4,7 @@ const path = require('path');
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone', // Required for Electron packaging
-  serverExternalPackages: ['@anthropic-ai/sdk', '@modelcontextprotocol/sdk', 'jsonwebtoken'],
+  serverExternalPackages: ['@modelcontextprotocol/sdk', 'jsonwebtoken'],
   turbopack: {
     root: path.resolve(__dirname),
     ignoreIssue: [

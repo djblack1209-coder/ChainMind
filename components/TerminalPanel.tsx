@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import { Trash2, X } from "lucide-react";
+import "@xterm/xterm/css/xterm.css";
 
 interface TerminalPanelProps {
   open: boolean;
@@ -31,15 +32,6 @@ export default function TerminalPanel({ open, onToggle }: TerminalPanelProps) {
       const { WebLinksAddon } = await import("@xterm/addon-web-links");
 
       if (cancelled || !containerRef.current) return;
-
-      // Load xterm CSS
-      if (!document.getElementById("xterm-css")) {
-        const link = document.createElement("link");
-        link.id = "xterm-css";
-        link.rel = "stylesheet";
-        link.href = "https://cdn.jsdelivr.net/npm/@xterm/xterm@5/css/xterm.min.css";
-        document.head.appendChild(link);
-      }
 
       const term = new Terminal({
         theme: {

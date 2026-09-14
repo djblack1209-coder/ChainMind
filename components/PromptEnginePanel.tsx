@@ -399,7 +399,7 @@ export default function PromptEnginePanel({ open, onClose }: { open: boolean; on
                 <div>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-tertiary)] mb-2">完善轮次</div>
                   <div className="space-y-2">
-                    {session.rounds.map((round, i) => (
+                    {session.rounds.map((round) => (
                       <div key={`${round.agentId}-${round.roundIndex}`} className="rounded-[16px] border border-white/8 bg-white/[0.03] p-3">
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2">

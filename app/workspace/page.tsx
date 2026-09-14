@@ -3,7 +3,6 @@
 // Workspace — TRAE-style IDE layout: activity bar + sidebar + editor + terminal
 
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ApiKeyManager from '@/components/ApiKeyManager';
 import BrandMark from '@/components/BrandMark';
@@ -12,14 +11,13 @@ import { ToastProvider, useToast } from '@/components/Toast';
 import { useApiKeyStore } from '@/stores/api-key-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useChainStore } from '@/stores/chain-store';
-import { useAuthStore } from '@/stores/auth-store';
 
 import TerminalPanel from '@/components/TerminalPanel';
 import MCPConfigPanel from '@/components/MCPConfigPanel';
 import PromptEnginePanel from '@/components/PromptEnginePanel';
 import CommandPalette from '@/components/CommandPalette';
 import type { AIProvider } from '@/lib/types';
-import { DEFAULT_PROVIDER_MODEL, MODEL_OPTIONS, MODEL_SPOTLIGHTS, getModelTokenProfile, formatTokenCount } from '@/lib/types';
+import { DEFAULT_PROVIDER_MODEL, MODEL_OPTIONS } from '@/lib/types';
 import type { SlashCommand } from '@/lib/tools';
 import { useTitlebarInset } from '@/lib/use-titlebar-inset';
 import { useTheme } from '@/components/ThemeProvider';
@@ -36,7 +34,6 @@ type WorkspaceMode = 'chat' | 'chain' | 'compare';
 type ActivityTab = 'explorer' | 'chain' | 'search' | 'settings';
 
 function WorkspaceInner() {
-  const router = useRouter();
   const titlebarInset = useTitlebarInset();
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const [apiKeysOpen, setApiKeysOpen] = useState(false);
@@ -71,7 +68,6 @@ function WorkspaceInner() {
     discussions, activeDiscussionId, loaded: chainLoaded,
     loadDiscussions, deleteDiscussion, setActiveDiscussion,
   } = useChainStore();
-  const user = useAuthStore((s) => s.user);
 
   const { toast } = useToast();
 
@@ -154,7 +150,6 @@ function WorkspaceInner() {
 
   const activeConv = conversations.find((c) => c.id === activeConversationId);
   const activeDiscussion = discussions.find((d) => d.id === activeDiscussionId);
-  const activeModelProfile = getModelTokenProfile(activeConv?.model || currentModel);
 
   const PROVIDER_INFO: Record<AIProvider, { label: string; icon: string; color: string }> = {
     claude: { label: 'Claude', icon: 'C', color: 'text-amber-200' },

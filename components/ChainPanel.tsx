@@ -21,7 +21,6 @@ import { parseToolCalls, executeAllTools } from '@/lib/tool-executor';
 import { MarkdownRenderer } from '@/components/chat/MarkdownRenderer';
 import HumanApprovalCard from '@/components/chain/HumanApprovalCard';
 import ExecutionTimeline from '@/components/chain/ExecutionTimeline';
-import { getBuiltinAgents, getBuiltinWorkflows } from '@/lib/agent-config';
 import { useExecutionEngine } from '@/lib/use-execution-engine';
 
 // Lightweight wrapper to avoid re-renders during streaming

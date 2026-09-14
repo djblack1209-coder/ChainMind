@@ -2,7 +2,7 @@
 // Replaces the heavy 6-step Chain Discussion for simple/medium tasks.
 // User describes task → system picks 2-4 agents → parallel execution → merged output.
 
-import type { ChainAgent, AIProvider } from './types';
+import type { ChainAgent } from './types';
 import { detectProvider, isFreeFriendlyModel, DEFAULT_PROVIDER_MODEL } from './types';
 
 // ─── Agent Role Templates ────────────────────────────────
@@ -196,7 +196,7 @@ export function buildMergePrompt(
   agentOutputs: { agentName: string; role: string; output: string }[]
 ): string {
   const outputsText = agentOutputs
-    .map((o, i) => `### ${o.agentName}（${o.role}）\n${o.output}`)
+    .map((o) => `### ${o.agentName}（${o.role}）\n${o.output}`)
     .join('\n\n---\n\n');
 
   return `你是一位整合专家。以下是多位 AI 专家针对同一任务的独立输出，请整合为一份高质量的最终回答。
